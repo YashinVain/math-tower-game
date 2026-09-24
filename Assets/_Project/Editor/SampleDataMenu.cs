@@ -18,8 +18,10 @@ namespace MathGame.EditorTools
         private const string MinigamesFolder = "Assets/_Project/ScriptableObjects/Minigames";
         private const string ThemesFolder = "Assets/_Project/ScriptableObjects/Themes";
         private const string CatalogPath = "Assets/_Project/ScriptableObjects/LevelCatalog.asset";
+        private const string TowerMinigamePrefabPath = "Assets/_Project/Prefabs/Minigames/Towers/TowerMinigame.prefab";
+        private const string DoorMinigamePrefabPath = "Assets/_Project/Prefabs/Minigames/Doors/DoorMinigame.prefab";
 
-        [MenuItem("MathGame/Bootstrap Sample Level Data")]
+        [MenuItem("MathGame/2. Bootstrap Sample Level Data")]
         public static void CreateSampleData()
         {
             var theme = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Default.asset");
@@ -27,11 +29,13 @@ namespace MathGame.EditorTools
             var towerDef = LoadOrCreate<TowerMinigameDefinition>($"{MinigamesFolder}/TowerMinigame_01.asset");
             towerDef.towerSizes = new List<int> { 2, 3, 4 };
             towerDef.heroStartingPower = 5;
+            LinkControllerPrefab(towerDef, TowerMinigamePrefabPath);
             EditorUtility.SetDirty(towerDef);
 
             var doorDef = LoadOrCreate<DoorMinigameDefinition>($"{MinigamesFolder}/DoorMinigame_01.asset");
             doorDef.doorsPerRound = 4;
             doorDef.correctDoorsRequired = 3;
+            LinkControllerPrefab(doorDef, DoorMinigamePrefabPath);
             EditorUtility.SetDirty(doorDef);
 
             var level1 = LoadOrCreate<LevelDefinition>($"{LevelsFolder}/Level_01_Towers.asset");
@@ -59,8 +63,7 @@ namespace MathGame.EditorTools
             Selection.activeObject = catalog;
             EditorGUIUtility.PingObject(catalog);
 
-            Debug.Log("Готово: Level_01_Towers, Level_02_Doors и LevelCatalog созданы/обновлены. " +
-                      "controllerPrefab у TowerMinigame_01 и DoorMinigame_01 назначьте вручную в инспекторе.");
+            Debug.Log("Готово: Level_01_Towers, Level_02_Doors и LevelCatalog созданы/обновлены.");
         }
 
         private static T LoadOrCreate<T>(string path) where T : ScriptableObject
@@ -71,6 +74,21 @@ namespace MathGame.EditorTools
             var instance = ScriptableObject.CreateInstance<T>();
             AssetDatabase.CreateAsset(instance, path);
             return instance;
+        }
+
+        // Если соответствующий префаб мини-игры уже собран (см.
+        // PrefabBuilderMenu) — подключаем его сюда сами. Если ещё нет
+        // (например, кто-то запустил только этот пункт меню, минуя
+        // "1. Build Tower And Door Prefabs") — тихо оставляем поле пустым,
+        // его можно будет перетащить в инспекторе вручную позже.
+        private static void LinkControllerPrefab(MinigameDefinition definition, string prefabPath)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefab == null) return;
+
+            var so = new SerializedObject(definition);
+            so.FindProperty("controllerPrefab").objectReferenceValue = prefab;
+            so.ApplyModifiedProperties();
         }
     }
 }

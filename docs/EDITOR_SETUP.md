@@ -1,10 +1,13 @@
 # Сборка вертикального среза в редакторе Unity — пошагово
 
-Весь код уже написан и лежит в `Assets/_Project/Scripts`. Но сцены,
-префабы и связи между компонентами в инспекторе (какая ссылка куда
-перетащена) Unity хранит не как текст, который можно надёжно сгенерировать
-снаружи, — это нужно сделать руками в редакторе. Этот документ — точный
-список шагов для этого.
+Весь код уже написан и лежит в `Assets/_Project/Scripts`. Но сцены и связи
+между компонентами в инспекторе (какая ссылка куда перетащена) Unity
+хранит не как текст, который можно надёжно сгенерировать снаружи, — это
+нужно сделать руками в редакторе. Префабы мини-игр раньше тоже нужно было
+собирать руками (десятки кликов), но теперь для них есть кнопка — см.
+раздел 3. Ручная сборка префаба всё равно описана в Приложении A в конце
+документа — пригодится, когда в проекте появится новый, третий тип
+мини-игры, для которого такой кнопки ещё не будет.
 
 Не обязательно проходить всё за один присест. Если что-то не совпадает
 с тем, что видите на экране, или Unity показывает ошибку — сохраните,
@@ -66,6 +69,12 @@
 - **Project** (обычно внизу) — все файлы проекта на диске: папки, скрипты,
   префабы, сцены, ассеты. Слева в этой панели — дерево папок, справа —
   содержимое той папки, что сейчас выбрана слева.
+
+Если какой-то из этих панелей не видно на экране: `Window → General →`
+и выбрать её по названию (например `Window → General → Hierarchy`) —
+откроет/вернёт её. Если весь экран выглядит непривычно (панели не там, где
+на скриншотах) — `Window → Layouts → Default` вернёт стандартное
+расположение всех панелей разом.
 
 Два действия, которые дальше встречаются постоянно:
 
@@ -132,28 +141,269 @@ Unity-проекты нужна папка вне этого дерева, на�
    углу окна Unity будет крутиться индикатор прогресса).
 
 **Способ Б (само выскочит):** если способа А не находите — просто
-переходите к пункту 3 этой инструкции и создавайте первый `TextMeshPro`-
-объект (`GameObject → 3D Object → Text - TextMeshPro`). При самой первой
-попытке Unity сама покажет окно **"TMP Importer"** с кнопкой **`Import TMP
-Essentials`** — нажмите её, подождите импорт, и дальше можно продолжать
-как обычно.
+переходите к разделу 3 и запускайте кнопку сборки. При самой первой
+попытке создать TMP-текст Unity сама покажет окно **"TMP Importer"** с
+кнопкой **`Import TMP Essentials`** — нажмите её, подождите импорт.
 
-Оба способа делают одно и то же, нужно сделать только один раз за всю
-жизнь проекта.
+## 3. Префабы и тестовые данные — одной кнопкой
 
-## 3. Префабы мини-игры «Башни»
+Раньше здесь была инструкция на ~50 отдельных кликов (создать объект,
+добавить компонент, переименовать, перетащить ссылку — и так четыре раза).
+Вместо этого написан код, который делает всё то же самое сам:
+`Assets/_Project/Editor/PrefabBuilderMenu.cs` и
+`Assets/_Project/Editor/SampleDataMenu.cs`. Это не магия — это обычный
+C#-скрипт, который создаёт те же объекты и присваивает те же ссылки, что
+раньше делались вручную мышкой, просто из кода. Такой скрипт может писать
+и запускать только сам редактор Unity (это и есть "инструмент редактора"),
+на итоговую игру он не влияет.
 
-Что такое префаб: заготовка объекта (или нескольких объектов вместе),
-сохранённая как отдельный файл в Project, которую потом можно "штамповать"
-много раз в игре — например, каждый голем в игре создаётся из одного и
-того же файла-префаба `Golem`.
+1. В самом верху экрана нажмите **`MathGame`** (это пункт меню, который
+   добавляют наши собственные редакторские скрипты — если его нет, скрипты
+   ещё не скомпилировались или в них ошибка, подождите и загляните в
+   `Window → General → Console`, нет ли там красных сообщений).
+2. Нажмите **`0. Build Everything (Prefabs + Sample Levels)`**.
+3. Подождите пару секунд. Внизу экрана, в окне **Console**
+   (`Window → General → Console`, если не открыто), должна появиться
+   строчка `Готово: Golem, TowerMinigame, Door, DoorMinigame — ...` и следом
+   `Готово: Level_01_Towers, Level_02_Doors и LevelCatalog созданы/обновлены.`
 
-Все эти шаги делаются в любой открытой сцене — например `SampleScene`
-(откройте её двойным кликом в `Project → Assets → Scenes`, если сейчас
-ничего не открыто). Это временная рабочая площадка только чтобы было где
-собрать префабы; в финальный проект сама эта сцена не войдёт.
+После этого в окне **Project** появятся:
 
-### 3.1 Префаб голема
+- `Assets/_Project/Prefabs/Minigames/Towers/Golem.prefab` и
+  `TowerMinigame.prefab`
+- `Assets/_Project/Prefabs/Minigames/Doors/Door.prefab` и
+  `DoorMinigame.prefab`
+- `Assets/_Project/ScriptableObjects/LevelCatalog.asset` и всё, что в нём
+  (`Level_01_Towers`, `Level_02_Doors`, `TowerMinigame_01`,
+  `DoorMinigame_01`, `Theme_Default`) — уже связанные друг с другом и со
+  свежесозданными префабами, ссылки заполнять руками не нужно.
+
+Можно кликнуть по любому из этих файлов в Project и посмотреть в
+Inspector, что там внутри, — так виднее, что именно код только что сделал
+(то же самое, что описано в Приложении A, только собрано автоматически).
+
+Если что-то нужно будет поменять вручную позже (например, взять готовый
+`Golem.prefab`, дважды кликнуть по нему, чтобы открыть его на редактирование,
+и подвинуть текст) — это обычный префаб, с ним можно работать как с любым
+другим.
+
+## 4. Сцена Boot
+
+1. `File → New Scene` → шаблон `Basic (Built-in)` или `2D` (не критично,
+   эта сцена ничего не показывает). Сохранить как
+   `Assets/_Project/Scenes/Boot.unity`.
+2. Можно удалить `Main Camera` и `Directional Light` по умолчанию — эта
+   сцена мгновенно переключается на `Menu`, ничего не рендерит.
+3. `GameObject → Create Empty` → назвать `GameServices`.
+4. Добавить компоненты **Game Services** и **Boot Loader**.
+5. В `Game Services` → поле `Level Catalog` → перетащить ассет
+   `LevelCatalog` (из `Assets/_Project/ScriptableObjects/`).
+6. Сохранить сцену (`Ctrl+S`).
+
+## 5. Сцена Menu
+
+Самая объёмная сцена по количеству UI-элементов. Создать
+`Assets/_Project/Scenes/Menu.unity` (`File → New Scene` → сохранить).
+
+### 5.1 Канвас и общая структура
+
+1. `GameObject → UI → Canvas` — Unity сам добавит `EventSystem` в сцену,
+   если его ещё нет (без него ни одна кнопка не будет реагировать на
+   клики — если вдруг видите, что клики по UI не работают, первым делом
+   проверьте, есть ли `EventSystem` в Hierarchy).
+2. На `Canvas` → `Canvas Scaler` → `UI Scale Mode = Scale With Screen
+   Size`, `Reference Resolution = 1920 x 1080` — чтобы UI масштабировался
+   под разные размеры окна одинаково.
+3. Внутри `Canvas` создать три дочерних пустых объекта с `Rect Transform`,
+   растянутым на весь экран (`Anchor Presets → Stretch/Stretch`, все
+   отступы 0): `MainPanel`, `LevelSelectPanel`, `SettingsPanel`.
+
+### 5.2 MainPanel
+
+Внутри `MainPanel` три кнопки: `GameObject → UI → Button - TextMeshPro`,
+текст на них — «Играть», «Настройки», «Выход». Назвать объекты
+`PlayButton`, `SettingsButton`, `QuitButton`.
+
+### 5.3 LevelSelectPanel
+
+1. Кнопка «Назад» → `BackButton`.
+2. `GameObject → Create Empty` внутри панели → `ButtonsContainer`.
+   Добавить на него компонент **Grid Layout Group** (`Add Component` →
+   найти) — тогда кнопки уровней, которые скрипт создаёт в цикле, сами
+   выстроятся сеткой без ручной расстановки координат. Настройте `Cell
+   Size` на глаз (например, 160×160) — это чисто визуальная настройка,
+   можно менять в любой момент.
+3. На объект `LevelSelectPanel` добавить компонент **Level Select Panel**
+   → поле `Buttons Container` → перетащить `ButtonsContainer`. Поле
+   `Level Button Prefab` заполним в шаге 5.5.
+4. Кнопку `BackButton` пока не привязывайте — это сделает `MenuUIController`
+   в шаге 5.6.
+
+### 5.4 SettingsPanel
+
+Внутри `SettingsPanel` создать элементы управления (тип Unity-объекта
+справа). Расположение свободное — рекомендую добавить на `SettingsPanel`
+компонент **Vertical Layout Group**, тогда всё само выстроится в столбец
+без ручной расстановки:
+
+| Объект | Тип | Зачем |
+|---|---|---|
+| `NumberMinSlider` | `UI → Slider` | нижняя граница диапазона чисел |
+| `NumberMinLabel` | `UI → Text - TextMeshPro` | показывает текущее значение |
+| `NumberMaxSlider` | `UI → Slider` | верхняя граница диапазона |
+| `NumberMaxLabel` | `UI → Text - TextMeshPro` | текущее значение |
+| `AdditionToggle` | `UI → Toggle` | сложение вкл/выкл |
+| `SubtractionToggle` | `UI → Toggle` | вычитание |
+| `MultiplicationToggle` | `UI → Toggle` | умножение |
+| `DivisionToggle` | `UI → Toggle` | деление |
+| `DifficultyGrowthToggle` | `UI → Toggle` | рост сложности вкл/выкл |
+| `DifficultyGrowthRateSlider` | `UI → Slider` | на сколько растёт (0..1) |
+| `DifficultyGrowthRateLabel` | `UI → Text - TextMeshPro` | текущее значение |
+| `TimeLimitSlider` | `UI → Slider` | лимит времени на уровень |
+| `TimeLimitLabel` | `UI → Text - TextMeshPro` | текущее значение |
+| `DoorsEasyModeToggle` | `UI → Toggle` | упрощённый режим дверей |
+| `ResetProgressButton` | `UI → Button - TextMeshPro` | «Сбросить прогресс» |
+| `BackButton` | `UI → Button - TextMeshPro` | «Назад» |
+
+Для слайдеров задайте разумные `Min Value`/`Max Value` в инспекторе
+самого `Slider`, например: `NumberMinSlider` 0–20, `NumberMaxSlider`
+1–50, `DifficultyGrowthRateSlider` 0–1, `TimeLimitSlider` 15–300.
+
+Плюс маленькая вложенная панель подтверждения сброса прогресса — создать
+`GameObject → Create Empty` → `ResetConfirmRoot`, внутри два `Button -
+TextMeshPro`: `ResetConfirmYesButton` («Да, сбросить»),
+`ResetConfirmNoButton` («Отмена»), и текст-предупреждение (просто TMP-текст,
+без ссылки в скрипте — он статический).
+
+На `SettingsPanel` добавить компонент **Settings Panel** и перетащить все
+перечисленные объекты в соответствующие поля (имена полей в инспекторе
+совпадают с именами объектов, только без подчёркивания — например,
+`Number Min Slider` ← `NumberMinSlider`).
+
+### 5.5 Префаб LevelButton
+
+1. Внутри `LevelSelectPanel → ButtonsContainer` временно создать
+   `UI → Button - TextMeshPro` → назвать `LevelButton`.
+2. Внутри него — дочерний TMP-текст `NumberLabel` (номер уровня), и два
+   небольших `Image` (или любых GameObject-индикатора) — `LockIcon` и
+   `CompletedIcon` — например, просто цветные квадраты-заглушки
+   (полупрозрачно-серый для замка, зелёная галочка/квадрат для
+   пройденного). Оба на старте можно оставить активными в сцене — скрипт
+   сам включает/выключает нужный.
+3. На `LevelButton` добавить компонент **Level Button** → заполнить
+   `Button` (сам этот объект), `Number Label`, `Lock Icon`, `Completed
+   Icon`.
+4. Перетащить `LevelButton` в `Assets/_Project/Prefabs/UI/` — это создаст
+   префаб. Удалить `LevelButton` из `ButtonsContainer` в сцене (он будет
+   создаваться скриптом заново каждый раз).
+5. Вернуться на `LevelSelectPanel` → `Level Select Panel` → поле `Level
+   Button Prefab` → перетащить только что созданный префаб.
+
+### 5.6 MenuUIController
+
+1. На объект `Canvas` (или отдельный пустой `GameObject` рядом) добавить
+   компонент **Menu UI Controller**.
+2. Заполнить поля: `Main Panel`, `Level Select Panel` (сам объект с
+   компонентом `LevelSelectPanel`), `Settings Panel` (объект с
+   `SettingsPanel`), `Play Button`, `Settings Button`, `Quit Button`
+   (из `MainPanel`), `Level Select Back Button` (из `LevelSelectPanel`),
+   `Settings Back Button` (из `SettingsPanel`).
+3. Сохранить сцену.
+
+## 6. Сцена Gameplay
+
+Создать `Assets/_Project/Scenes/Gameplay.unity`.
+
+1. На `Main Camera` добавить компонент **Camera Follow X**. Проверить, что
+   у камеры стоит тег `MainCamera` (по умолчанию так и есть).
+2. `GameObject → 2D Object → Sprites → Square` → `Background`, растянуть
+   большим (`Scale`, например, 30×20), поставить позади остальных
+   объектов (`Position Z` побольше, или через `Sprite Renderer → Order in
+   Layer = -10`). Добавить компонент **Level Theme Applier** → поле
+   `Background Renderer` → перетащить туда же сам `Background` (его
+   собственный `SpriteRenderer`).
+3. `GameObject → Create Empty` → `MinigameHost`, позиция примерно
+   `(-4, -1, 0)` — сюда `GameplayController` будет добавлять текущую
+   мини-игру (герой в префабе мини-игры стоит примерно в `(-2,0,0)`
+   локально, так что в мировых координатах он окажется около
+   `(-6,-1,0)` — не критично, поправите на глаз позже).
+4. `GameObject → Create Empty` → `GameFlow`. Добавить компонент
+   **Gameplay Controller** (компонент **Countdown Timer** добавится сам —
+   он указан как обязательный).
+5. `GameObject → UI → Canvas` — для HUD/паузы/результата.
+   - Внутри: `TimerLabel` (`UI → Text - TextMeshPro`), `TimerFillBar`
+     (`UI → Image`, в инспекторе `Image Type = Filled`) — оба под общим
+     `HUD` (`Create Empty`). На `HUD` добавить компонент **Gameplay Hud**
+     → заполнить оба поля.
+   - `ResultPanel` (`Create Empty`): `TitleLabel` (TMP), `PrimaryButton`
+     (`Button - TextMeshPro`, у него текст — отдельный дочерний TMP-объект
+     — это и есть `PrimaryButtonLabel`), `SecondaryButton` (`Button -
+     TextMeshPro`, текст можно сразу поставить «В меню» — его код не
+     меняет). Добавить компонент **Result Panel** → `Root` (сам
+     `ResultPanel`), `Title Label`, `Primary Button`, `Primary Button
+     Label`, `Secondary Button`.
+   - `PausePanel` (`Create Empty`): `ResumeButton`, `ExitButton` (оба
+     `Button - TextMeshPro`, с текстом «Продолжить» / «Выйти»). Добавить
+     компонент **Pause Panel** → `Root`, `Resume Button`, `Exit Button`.
+6. На `GameFlow` → `Gameplay Controller` заполнить: `Minigame Host` →
+   `MinigameHost`; `Hud` → объект `HUD`; `Result Panel` → объект
+   `ResultPanel`; `Pause Panel` → объект `PausePanel`.
+7. Сохранить сцену.
+
+## 7. Build Settings — порядок сцен
+
+`File → Build Settings` (или `File → Build Profiles` в некоторых версиях
+6.3) → `Add Open Scenes` для каждой сцены по очереди, либо перетащить все
+три файла сцен из Project-окна в список. **Порядок важен**: `Boot` должен
+быть первым (индекс 0) — именно с него стартует сборка. Порядок:
+
+1. `Boot`
+2. `Menu`
+3. `Gameplay`
+
+## 8. Первый запуск
+
+1. Открыть сцену `Boot.unity`, нажать `Play`.
+2. Ожидается: мгновенный переход в `Menu`, три кнопки главного экрана.
+3. `Играть` → сетка из 2 уровней (уровень 1 доступен, уровень 2 пока
+   заблокирован — так и должно быть, пока уровень 1 не пройден).
+4. Открыть уровень 1 → должны появиться герой и 2 голема с примерами.
+   Клик по голему с ответом ≤ силы героя → победа, герой поглощает силу и
+   т.д. до конца всех трёх башен (2→3→4 голема).
+5. После победы — экран результата, кнопка «Следующий уровень» ведёт на
+   уровень 2 (двери).
+6. `Esc` в любой момент внутри уровня → меню паузы.
+7. `Настройки` из главного меню → все переключатели должны отражать
+   реальные значения и сохраняться (проверить: поменять диапазон чисел,
+   выйти в меню и зайти в настройки снова — значение должно остаться).
+
+Если что-то не совпало — это ожидаемо на первой сборке такого объёма
+руками, пришлите текст ошибки из консоли Unity (`Window → General →
+Console`) или скриншот, разберёмся вместе.
+
+## 9. После того как заработало
+
+Самое время сделать `git add -A`, `git commit`, `git push` — теперь в
+репозитории появятся сцены, ассеты уровней и их `.meta`-файлы (Unity
+создаёт их сама при первом импорте каждого файла). Дальше это нужно будет
+делать после каждого заметного куска работы — я буду подсказывать моменты.
+
+---
+
+## Приложение A: как собран префаб вручную (для справки)
+
+Раздел 3 выше собирает эти префабы кодом за секунду. Это приложение — то,
+что раньше было основной инструкцией: пошагово, что код в разделе 3 делает
+"руками". Пригодится, если: захотите понять, из чего вообще состоит
+префаб (когда объясняете это преподавателю); нужно будет пересобрать
+что-то после ручных правок; или в проекте появится новый тип мини-игры, у
+которого такой кнопки-автосборщика ещё нет.
+
+Открывать для сборки можно любую сцену — например `SampleScene`
+(`Project → Assets → Scenes → SampleScene`, двойной клик). Это временная
+рабочая площадка, в финальный проект сама сцена не входит.
+
+### A.1 Префаб голема
 
 1. Вверху экрана нажмите **`GameObject`**.
 2. Наведите (не нажимайте) на **`2D Object`** — сбоку раскроется список.
@@ -203,19 +453,19 @@ Essentials`** — нажмите её, подождите импорт, и да�
     кнопкой мыши → **`Delete`**. (Сам префаб при этом никуда не денется,
     он уже сохранён в Project.)
 
-### 3.2 Префаб TowerMinigame (герой + управляющий объект)
+### A.2 Префаб TowerMinigame (герой + управляющий объект)
 
 1. В Hierarchy кликните правой кнопкой мыши по **пустому месту** (не по
    объекту) → **`Create Empty`**.
    → Появится пустой объект с именем `GameObject`.
-2. Переименуйте его (как в 3.1.5) в **`TowerMinigame`**.
+2. Переименуйте его (как в A.1.5) в **`TowerMinigame`**.
 3. Выделите `TowerMinigame` кликом в Hierarchy → в Inspector →
    `Add Component` → напечатайте **`Tower Minigame Controller`** →
    кликните по найденному варианту.
 4. Теперь добавим героя ВНУТРИ `TowerMinigame`. Правило Unity: новый
    объект создаётся внутри того, что сейчас выделено. Проверьте, что
    `TowerMinigame` сейчас выделен (подсвечен) в Hierarchy, и повторите
-   шаги 3.1.1–3.1.4 (`GameObject → 2D Object → Sprites → Square`).
+   шаги A.1.1–A.1.4 (`GameObject → 2D Object → Sprites → Square`).
    → Новый `Square` должен появиться с отступом под `TowerMinigame`. Если
    он появился БЕЗ отступа (то есть рядом, а не внутри) — перетащите его
    мышкой прямо на слово `TowerMinigame` в Hierarchy, это тоже сделает его
@@ -225,7 +475,7 @@ Essentials`** — нажмите её, подождите импорт, и да�
    `X = -2`, `Y = 0`, `Z = 0`.
 7. На `Hero` → `Add Component` → напечатайте **`Hero View`** → выберите
    его. (Коллайдер герою добавлять не нужно — его не кликают мышкой.)
-8. С выделенным `Hero` повторите шаги 3.1.10–3.1.12: правой кнопкой по
+8. С выделенным `Hero` повторите шаги A.1.10–A.1.12: правой кнопкой по
    `Hero` → `3D Object` → `Text - TextMeshPro` → переименовать в
    **`PowerLabel`** → `Position Y = 1`.
 9. Выделите `TowerMinigame` (родителя, не `Hero`) в Hierarchy → правой
@@ -234,11 +484,11 @@ Essentials`** — нажмите её, подождите импорт, и да�
 10. Кликните по `TowerMinigame` в Hierarchy, чтобы выделить именно его →
     в Inspector найдите блок **`Tower Minigame Controller`** — в нём
     несколько пустых полей. Заполните их перетаскиванием (приём из шага
-    3.1.15):
+    A.1.15):
     - **`Hero`** ← объект `Hero` из Hierarchy.
     - **`Golem Prefab`** ← файл `Golem` из окна **Project**
       (`Assets/_Project/Prefabs/Minigames/Towers/Golem` — НЕ из Hierarchy,
-      там его больше нет, мы удалили его в 3.1.18).
+      там его больше нет, мы удалили его в A.1.18).
     - **`Golem Slot Parent`** ← объект `GolemSlots` из Hierarchy.
     - **`Hero Power Label`** ← объект `PowerLabel` из Hierarchy (он внутри
       `Hero` — если не видно, нажмите маленькую стрелочку слева от `Hero`
@@ -247,21 +497,18 @@ Essentials`** — нажмите её, подождите импорт, и да�
       `Move Duration`) не трогайте — там уже стоят рабочие значения по
       умолчанию, их можно будет покрутить позже.
 11. Перетащите `TowerMinigame` из Hierarchy в окно Project, в ту же папку
-    `Assets/_Project/Prefabs/Minigames/Towers/` (как в 3.1.16–3.1.17) —
+    `Assets/_Project/Prefabs/Minigames/Towers/` (как в A.1.16–A.1.17) —
     создастся префаб `TowerMinigame`.
-12. Удалите `TowerMinigame` из Hierarchy (как в 3.1.18, правой кнопкой →
+12. Удалите `TowerMinigame` из Hierarchy (как в A.1.18, правой кнопкой →
     `Delete`) — префаб уже сохранён, в сцене он больше не нужен.
 
-## 4. Префабы мини-игры «Двери»
+### A.3 Префаб двери
 
-Ровно та же механика, что в разделе 3 — только другой скрипт и другие
-имена объектов. Если что-то из формулировок непонятно, посмотрите тот же
-шаг в разделе 3.1 — там расписано подробнее по клику.
-
-### 4.1 Префаб двери
+Ровно та же механика, что в A.1 — только другой скрипт и другие имена
+объектов.
 
 1. `GameObject` → навести на `2D Object` → навести на `Sprites` → нажать
-   `Square` (как в 3.1.1–3.1.4).
+   `Square` (как в A.1.1–A.1.4).
 2. Переименовать в **`Door`** (двойной клик по имени в Hierarchy).
 3. Выделить `Door` → Inspector → `Add Component` → **`Box Collider 2D`**
    (обязательно — без него клик по двери не сработает).
@@ -279,7 +526,7 @@ Essentials`** — нажмите её, подождите импорт, и да�
    перетащить туда `Door` из Hierarchy (создаст префаб), затем удалить
    `Door` из Hierarchy правой кнопкой → `Delete`.
 
-### 4.2 Префаб DoorMinigame (управляющий объект)
+### A.4 Префаб DoorMinigame (управляющий объект)
 
 1. В Hierarchy правой кнопкой по пустому месту → `Create Empty` →
    переименовать в **`DoorMinigame`**.
@@ -304,224 +551,3 @@ Essentials`** — нажмите её, подождите импорт, и да�
 7. Перетащить `DoorMinigame` из Hierarchy в
    `Assets/_Project/Prefabs/Minigames/Doors/` в окне Project (создаст
    префаб), удалить `DoorMinigame` из Hierarchy.
-
-## 5. Тестовые данные уровней
-
-Теперь, когда префабы существуют, можно создать данные уровней и
-привязать их друг к другу.
-
-1. В строке меню Unity: `MathGame → Bootstrap Sample Level Data`. Это
-   наш собственный инструмент (`Assets/_Project/Editor/SampleDataMenu.cs`)
-   — создаст `LevelCatalog`, `Level_01_Towers`, `Level_02_Doors`,
-   `TowerMinigame_01`, `DoorMinigame_01` и `Theme_Default` в
-   `Assets/_Project/ScriptableObjects/` и сразу выделит `LevelCatalog` в
-   Project-окне.
-2. Открыть `ScriptableObjects/Minigames/TowerMinigame_01` → поле
-   `Controller Prefab` → перетащить префаб `TowerMinigame` (из шага 3.3).
-3. Открыть `ScriptableObjects/Minigames/DoorMinigame_01` → поле
-   `Controller Prefab` → перетащить префаб `DoorMinigame` (из шага 4.2).
-4. (Необязательно сейчас) Открыть `Level_01_Towers` / `Level_02_Doors` и
-   на глаз проверить, что `Sequence` не пустой, а `Level Id` заполнен —
-   инструмент уже должен был всё это поставить.
-
-## 6. Сцена Boot
-
-1. `File → New Scene` → шаблон `Basic (Built-in)` или `2D` (не критично,
-   эта сцена ничего не показывает). Сохранить как
-   `Assets/_Project/Scenes/Boot.unity`.
-2. Можно удалить `Main Camera` и `Directional Light` по умолчанию — эта
-   сцена мгновенно переключается на `Menu`, ничего не рендерит.
-3. `GameObject → Create Empty` → назвать `GameServices`.
-4. Добавить компоненты **Game Services** и **Boot Loader**.
-5. В `Game Services` → поле `Level Catalog` → перетащить ассет
-   `LevelCatalog` (из `ScriptableObjects/`).
-6. Сохранить сцену (`Ctrl+S`).
-
-## 7. Сцена Menu
-
-Самая объёмная сцена по количеству UI-элементов. Создать
-`Assets/_Project/Scenes/Menu.unity` (`File → New Scene` → сохранить).
-
-### 7.1 Канвас и общая структура
-
-1. `GameObject → UI → Canvas` — Unity сам добавит `EventSystem` в сцену,
-   если его ещё нет (без него ни одна кнопка не будет реагировать на
-   клики — если вдруг видите, что клики по UI не работают, первым делом
-   проверьте, есть ли `EventSystem` в Hierarchy).
-2. На `Canvas` → `Canvas Scaler` → `UI Scale Mode = Scale With Screen
-   Size`, `Reference Resolution = 1920 x 1080` — чтобы UI масштабировался
-   под разные размеры окна одинаково.
-3. Внутри `Canvas` создать три дочерних пустых объекта с `Rect Transform`,
-   растянутым на весь экран (`Anchor Presets → Stretch/Stretch`, все
-   отступы 0): `MainPanel`, `LevelSelectPanel`, `SettingsPanel`.
-
-### 7.2 MainPanel
-
-Внутри `MainPanel` три кнопки: `GameObject → UI → Button - TextMeshPro`,
-текст на них — «Играть», «Настройки», «Выход». Назвать объекты
-`PlayButton`, `SettingsButton`, `QuitButton`.
-
-### 7.3 LevelSelectPanel
-
-1. Кнопка «Назад» → `BackButton`.
-2. `GameObject → Create Empty` внутри панели → `ButtonsContainer`.
-   Добавить на него компонент **Grid Layout Group** (`Add Component` →
-   найти) — тогда кнопки уровней, которые скрипт создаёт в цикле, сами
-   выстроятся сеткой без ручной расстановки координат. Настройте `Cell
-   Size` на глаз (например, 160×160) — это чисто визуальная настройка,
-   можно менять в любой момент.
-3. На объект `LevelSelectPanel` добавить компонент **Level Select Panel**
-   → поле `Buttons Container` → перетащить `ButtonsContainer`. Поле
-   `Level Button Prefab` заполним в шаге 7.5.
-4. Кнопку `BackButton` пока не привязывайте — это сделает `MenuUIController`
-   в шаге 7.6.
-
-### 7.4 SettingsPanel
-
-Внутри `SettingsPanel` создать элементы управления (тип Unity-объекта
-справа). Расположение свободное — рекомендую добавить на `SettingsPanel`
-компонент **Vertical Layout Group**, тогда всё само выстроится в столбец
-без ручной расстановки:
-
-| Объект | Тип | Зачем |
-|---|---|---|
-| `NumberMinSlider` | `UI → Slider` | нижняя граница диапазона чисел |
-| `NumberMinLabel` | `UI → Text - TextMeshPro` | показывает текущее значение |
-| `NumberMaxSlider` | `UI → Slider` | верхняя граница диапазона |
-| `NumberMaxLabel` | `UI → Text - TextMeshPro` | текущее значение |
-| `AdditionToggle` | `UI → Toggle` | сложение вкл/выкл |
-| `SubtractionToggle` | `UI → Toggle` | вычитание |
-| `MultiplicationToggle` | `UI → Toggle` | умножение |
-| `DivisionToggle` | `UI → Toggle` | деление |
-| `DifficultyGrowthToggle` | `UI → Toggle` | рост сложности вкл/выкл |
-| `DifficultyGrowthRateSlider` | `UI → Slider` | на сколько растёт (0..1) |
-| `DifficultyGrowthRateLabel` | `UI → Text - TextMeshPro` | текущее значение |
-| `TimeLimitSlider` | `UI → Slider` | лимит времени на уровень |
-| `TimeLimitLabel` | `UI → Text - TextMeshPro` | текущее значение |
-| `DoorsEasyModeToggle` | `UI → Toggle` | упрощённый режим дверей |
-| `ResetProgressButton` | `UI → Button - TextMeshPro` | «Сбросить прогресс» |
-| `BackButton` | `UI → Button - TextMeshPro` | «Назад» |
-
-Для слайдеров задайте разумные `Min Value`/`Max Value` в инспекторе
-самого `Slider`, например: `NumberMinSlider` 0–20, `NumberMaxSlider`
-1–50, `DifficultyGrowthRateSlider` 0–1, `TimeLimitSlider` 15–300.
-
-Плюс маленькая вложенная панель подтверждения сброса прогресса — создать
-`GameObject → Create Empty` → `ResetConfirmRoot`, внутри два `Button -
-TextMeshPro`: `ResetConfirmYesButton` («Да, сбросить»),
-`ResetConfirmNoButton` («Отмена»), и текст-предупреждение (просто TMP-текст,
-без ссылки в скрипте — он статический).
-
-На `SettingsPanel` добавить компонент **Settings Panel** и перетащить все
-перечисленные объекты в соответствующие поля (имена полей в инспекторе
-совпадают с именами объектов, только без подчёркивания — например,
-`Number Min Slider` ← `NumberMinSlider`).
-
-### 7.5 Префаб LevelButton
-
-1. Внутри `LevelSelectPanel → ButtonsContainer` временно создать
-   `UI → Button - TextMeshPro` → назвать `LevelButton`.
-2. Внутри него — дочерний TMP-текст `NumberLabel` (номер уровня), и два
-   небольших `Image` (или любых GameObject-индикатора) — `LockIcon` и
-   `CompletedIcon` — например, просто цветные квадраты-заглушки
-   (полупрозрачно-серый для замка, зелёная галочка/квадрат для
-   пройденного). Оба на старте можно оставить активными в сцене — скрипт
-   сам включает/выключает нужный.
-3. На `LevelButton` добавить компонент **Level Button** → заполнить
-   `Button` (сам этот объект), `Number Label`, `Lock Icon`, `Completed
-   Icon`.
-4. Перетащить `LevelButton` в `Assets/_Project/Prefabs/UI/` — это создаст
-   префаб. Удалить `LevelButton` из `ButtonsContainer` в сцене (он будет
-   создаваться скриптом заново каждый раз).
-5. Вернуться на `LevelSelectPanel` → `Level Select Panel` → поле `Level
-   Button Prefab` → перетащить только что созданный префаб.
-
-### 7.6 MenuUIController
-
-1. На объект `Canvas` (или отдельный пустой `GameObject` рядом) добавить
-   компонент **Menu UI Controller**.
-2. Заполнить поля: `Main Panel`, `Level Select Panel` (сам объект с
-   компонентом `LevelSelectPanel`), `Settings Panel` (объект с
-   `SettingsPanel`), `Play Button`, `Settings Button`, `Quit Button`
-   (из `MainPanel`), `Level Select Back Button` (из `LevelSelectPanel`),
-   `Settings Back Button` (из `SettingsPanel`).
-3. Сохранить сцену.
-
-## 8. Сцена Gameplay
-
-Создать `Assets/_Project/Scenes/Gameplay.unity`.
-
-1. На `Main Camera` добавить компонент **Camera Follow X**. Проверить, что
-   у камеры стоит тег `MainCamera` (по умолчанию так и есть).
-2. `GameObject → 2D Object → Sprites → Square` → `Background`, растянуть
-   большим (`Scale`, например, 30×20), поставить позади остальных
-   объектов (`Position Z` побольше, или через `Sprite Renderer → Order in
-   Layer = -10`). Добавить компонент **Level Theme Applier** → поле
-   `Background Renderer` → перетащить туда же сам `Background` (его
-   собственный `SpriteRenderer`).
-3. `GameObject → Create Empty` → `MinigameHost`, позиция примерно
-   `(-4, -1, 0)` — сюда `GameplayController` будет добавлять текущую
-   мини-игру (герой в префабе мини-игры стоит примерно в `(-2,0,0)`
-   локально, так что в мировых координатах он окажется около
-   `(-6,-1,0)` — не критично, поправите на глаз позже).
-4. `GameObject → Create Empty` → `GameFlow`. Добавить компонент
-   **Gameplay Controller** (компонент **Countdown Timer** добавится сам —
-   он указан как обязательный).
-5. `GameObject → UI → Canvas` — для HUD/паузы/результата.
-   - Внутри: `TimerLabel` (`UI → Text - TextMeshPro`), `TimerFillBar`
-     (`UI → Image`, в инспекторе `Image Type = Filled`) — оба под общим
-     `HUD` (`Create Empty`). На `HUD` добавить компонент **Gameplay Hud**
-     → заполнить оба поля.
-   - `ResultPanel` (`Create Empty`): `TitleLabel` (TMP), `PrimaryButton`
-     (`Button - TextMeshPro`, у него текст — отдельный дочерний TMP-объект
-     — это и есть `PrimaryButtonLabel`), `SecondaryButton` (`Button -
-     TextMeshPro`, текст можно сразу поставить «В меню» — его код не
-     меняет). Добавить компонент **Result Panel** → `Root` (сам
-     `ResultPanel`), `Title Label`, `Primary Button`, `Primary Button
-     Label`, `Secondary Button`.
-   - `PausePanel` (`Create Empty`): `ResumeButton`, `ExitButton` (оба
-     `Button - TextMeshPro`, с текстом «Продолжить» / «Выйти»). Добавить
-     компонент **Pause Panel** → `Root`, `Resume Button`, `Exit Button`.
-6. На `GameFlow` → `Gameplay Controller` заполнить: `Minigame Host` →
-   `MinigameHost`; `Hud` → объект `HUD`; `Result Panel` → объект
-   `ResultPanel`; `Pause Panel` → объект `PausePanel`.
-7. Сохранить сцену.
-
-## 9. Build Settings — порядок сцен
-
-`File → Build Settings` (или `File → Build Profiles` в некоторых версиях
-6.3) → `Add Open Scenes` для каждой сцены по очереди, либо перетащить все
-три файла сцен из Project-окна в список. **Порядок важен**: `Boot` должен
-быть первым (индекс 0) — именно с него стартует сборка. Порядок:
-
-1. `Boot`
-2. `Menu`
-3. `Gameplay`
-
-## 10. Первый запуск
-
-1. Открыть сцену `Boot.unity`, нажать `Play`.
-2. Ожидается: мгновенный переход в `Menu`, три кнопки главного экрана.
-3. `Играть` → сетка из 2 уровней (уровень 1 доступен, уровень 2 пока
-   заблокирован — так и должно быть, пока уровень 1 не пройден).
-4. Открыть уровень 1 → должны появиться герой и 2 голема с примерами.
-   Клик по голему с ответом ≤ силы героя → победа, герой поглощает силу и
-   т.д. до конца всех трёх башен (2→3→4 голема).
-5. После победы — экран результата, кнопка «Следующий уровень» ведёт на
-   уровень 2 (двери).
-6. `Esc` в любой момент внутри уровня → меню паузы.
-7. `Настройки` из главного меню → все переключатели должны отражать
-   реальные значения и сохраняться (проверить: поменять диапазон чисел,
-   выйти в меню и зайти в настройки снова — значение должно остаться).
-
-Если что-то не совпало — это ожидаемо на первой сборке такого объёма
-руками, пришлите текст ошибки из консоли Unity (`Window → General →
-Console`) или скриншот, разберёмся вместе.
-
-## 11. После того как заработало
-
-Самое время сделать `git add -A`, `git commit`, `git push` — теперь в
-репозитории появятся сцены, префабы, ассеты уровней и их `.meta`-файлы
-(Unity создаёт их сама при первом импорте каждого файла). Дальше это
-нужно будет делать после каждого заметного куска работы — я буду
-подсказывать моменты.
