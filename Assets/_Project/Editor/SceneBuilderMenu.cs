@@ -101,6 +101,13 @@ namespace MathGame.EditorTools
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
+            var cameraGo = new GameObject("Main Camera");
+            var camera = cameraGo.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.12f, 0.12f, 0.16f);
+            cameraGo.tag = "MainCamera";
+            cameraGo.AddComponent<AudioListener>();
+
             CreateEventSystem();
             var canvasGo = CreateCanvas(null, "Canvas");
 
