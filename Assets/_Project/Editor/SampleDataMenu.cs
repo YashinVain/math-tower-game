@@ -79,8 +79,8 @@ namespace MathGame.EditorTools
         // Если соответствующий префаб мини-игры уже собран (см.
         // PrefabBuilderMenu) — подключаем его сюда сами. Если ещё нет
         // (например, кто-то запустил только этот пункт меню, минуя
-        // "1. Build Tower And Door Prefabs") — тихо оставляем поле пустым,
-        // его можно будет перетащить в инспекторе вручную позже.
+        // "1. Build Prefabs") — тихо оставляем поле пустым, его можно
+        // будет перетащить в инспекторе вручную позже.
         private static void LinkControllerPrefab(MinigameDefinition definition, string prefabPath)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);

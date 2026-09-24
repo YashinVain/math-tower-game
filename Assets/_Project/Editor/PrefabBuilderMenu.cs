@@ -1,14 +1,17 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using MathGame.Minigames.Towers;
 using MathGame.Minigames.Doors;
+using MathGame.UI.Menu;
+using static MathGame.EditorTools.EditorBuildUtils;
 
 namespace MathGame.EditorTools
 {
-    // Собирает префабы Golem / TowerMinigame / Door / DoorMinigame кодом,
-    // а не руками через Hierarchy/Inspector — ровно то же самое, что
-    // описано пошагово в docs/EDITOR_SETUP.md (разделы 3-4), но без риска
+    // Собирает префабы Golem / TowerMinigame / Door / DoorMinigame / LevelButton
+    // кодом, а не руками через Hierarchy/Inspector — ровно то же самое, что
+    // описано пошагово в docs/EDITOR_SETUP.md (Приложение A), но без риска
     // ошибиться на одном из шагов. Ручная сборка в документе остаётся как
     // способ понять, из чего вообще состоит каждый префаб, и как
     // отправная точка, если потом что-то в них нужно будет поменять руками.
@@ -21,8 +24,9 @@ namespace MathGame.EditorTools
     {
         private const string TowersFolder = "Assets/_Project/Prefabs/Minigames/Towers";
         private const string DoorsFolder = "Assets/_Project/Prefabs/Minigames/Doors";
+        private const string UIFolder = "Assets/_Project/Prefabs/UI";
 
-        [MenuItem("MathGame/1. Build Tower And Door Prefabs")]
+        [MenuItem("MathGame/1. Build Prefabs")]
         public static void BuildPrefabs()
         {
             var golemPrefab = BuildGolemPrefab();
@@ -31,53 +35,21 @@ namespace MathGame.EditorTools
             var doorPrefab = BuildDoorPrefab();
             BuildDoorMinigamePrefab(doorPrefab);
 
+            BuildLevelButtonPrefab();
+
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("Готово: Golem, TowerMinigame, Door, DoorMinigame — в " +
-                      $"{TowersFolder} и {DoorsFolder}. Дальше: MathGame → 2. Bootstrap Sample Level Data.");
+            Debug.Log("Готово: Golem, TowerMinigame, Door, DoorMinigame, LevelButton собраны. Дальше: MathGame → 2. Bootstrap Sample Level Data.");
         }
 
-        [MenuItem("MathGame/0. Build Everything (Prefabs + Sample Levels)")]
+        [MenuItem("MathGame/0. Build Absolutely Everything")]
         public static void BuildEverything()
         {
             BuildPrefabs();
             SampleDataMenu.CreateSampleData();
-        }
-
-        private static Sprite CreatePlaceholderSprite(Color color)
-        {
-            var texture = new Texture2D(4, 4) { name = "PlaceholderSquare" };
-            var pixels = new Color[16];
-            for (int i = 0; i < pixels.Length; i++) pixels[i] = color;
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
-        }
-
-        private static TextMeshPro CreateWorldLabel(Transform parent, string name, float yOffset)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3(0f, yOffset, 0f);
-            var tmp = go.AddComponent<TextMeshPro>();
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 4;
-            tmp.text = "0";
-            return tmp;
-        }
-
-        private static void SetField(Object target, string fieldName, Object value)
-        {
-            var so = new SerializedObject(target);
-            var prop = so.FindProperty(fieldName);
-            if (prop == null)
-            {
-                Debug.LogError($"Поле '{fieldName}' не найдено на {target.GetType().Name} — проверьте, не переименовалось ли оно в скрипте.");
-                return;
-            }
-            prop.objectReferenceValue = value;
-            so.ApplyModifiedProperties();
+            SceneBuilderMenu.BuildAllScenes();
+            Debug.Log("Готово: префабы, тестовые уровни и все 3 сцены собраны и добавлены в Build Settings. Можно открывать Boot.unity и жать Play.");
         }
 
         private static bool AlreadyExists(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path) != null;
@@ -188,6 +160,64 @@ namespace MathGame.EditorTools
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
+        }
+
+        private static void BuildLevelButtonPrefab()
+        {
+            var path = $"{UIFolder}/LevelButton.prefab";
+            if (AlreadyExists(path))
+            {
+                Debug.Log($"{path} уже существует — пропускаю.");
+                return;
+            }
+
+            var buttonGo = new GameObject("LevelButton", typeof(RectTransform));
+            var rect = buttonGo.GetComponent<RectTransform>();
+            SetPreferredSize(buttonGo, 160, 160);
+
+            var image = buttonGo.AddComponent<Image>();
+            image.color = new Color(1f, 1f, 1f, 0.9f);
+            var button = buttonGo.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            var numberRect = CreateUIObject("NumberLabel", rect);
+            StretchFull(numberRect);
+            var numberLabel = numberRect.gameObject.AddComponent<TextMeshProUGUI>();
+            numberLabel.text = "1";
+            numberLabel.fontSize = 48;
+            numberLabel.color = Color.black;
+            numberLabel.alignment = TextAlignmentOptions.Center;
+
+            var lockIcon = CreateIcon(rect, "LockIcon", new Color(0.15f, 0.15f, 0.15f, 0.75f), 160, 160);
+            var lockRect = lockIcon.rectTransform;
+            StretchFull(lockRect);
+
+            var completedIcon = CreateIcon(rect, "CompletedIcon", new Color(0.25f, 0.8f, 0.35f, 0.85f), 36, 36);
+            var completedRect = completedIcon.rectTransform;
+            completedRect.anchorMin = new Vector2(1, 1);
+            completedRect.anchorMax = new Vector2(1, 1);
+            completedRect.anchoredPosition = new Vector2(-20, -20);
+
+            var levelButton = buttonGo.AddComponent<LevelButton>();
+            SetField(levelButton, "button", button);
+            SetField(levelButton, "numberLabel", numberLabel);
+            SetField(levelButton, "lockIcon", lockIcon.gameObject);
+            SetField(levelButton, "completedIcon", completedIcon.gameObject);
+
+            PrefabUtility.SaveAsPrefabAsset(buttonGo, path);
+            Object.DestroyImmediate(buttonGo);
+        }
+
+        private static TextMeshPro CreateWorldLabel(Transform parent, string name, float yOffset)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = new Vector3(0f, yOffset, 0f);
+            var tmp = go.AddComponent<TextMeshPro>();
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontSize = 4;
+            tmp.text = "0";
+            return tmp;
         }
     }
 }
