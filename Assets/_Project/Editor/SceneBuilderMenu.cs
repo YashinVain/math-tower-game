@@ -202,11 +202,21 @@ namespace MathGame.EditorTools
             var back = CreateButton(panel, "BackButton", "Назад", 200, 60, 24);
 
             var container = CreateUIObject("ButtonsContainer", panel);
-            SetPreferredSize(container.gameObject, 1600, 800);
+            SetPreferredSize(container.gameObject, 1600, 160);
             var grid = container.gameObject.AddComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(160, 160);
             grid.spacing = new Vector2(20, 20);
             grid.childAlignment = TextAnchor.UpperCenter;
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 5;
+
+            // Контейнер фиксированной ширины (5 колонок), но с автоподгонкой
+            // высоты под реальное число уровней — иначе с запасом "на
+            // будущее" (например 1600x800 под много уровней) при всего 1-2
+            // уровнях остаётся гигантский пустой хвост, из-за которого вся
+            // раскладка визуально "уезжает" за пределы экрана.
+            var fitter = container.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var levelSelectPanel = panel.gameObject.AddComponent<LevelSelectPanel>();
             SetField(levelSelectPanel, "buttonsContainer", container);
