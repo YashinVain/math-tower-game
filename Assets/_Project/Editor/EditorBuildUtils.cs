@@ -8,9 +8,14 @@ namespace MathGame.EditorTools
     // Общие маленькие помощники для редакторских инструментов сборки
     // (PrefabBuilderMenu, SceneBuilderMenu) — чтобы не дублировать один и
     // тот же код создания UI-элементов и назначения ссылок в двух местах.
-    // Всё построено на UnityEngine.UI.LayoutGroup/LayoutElement, а не на
-    // ручном расчёте координат, — так собранные экраны не разваливаются
-    // при разных размерах текста/окна, и код не нужно подгонять руками.
+    //
+    // Позиционирование — через AnchorAt: у каждого элемента anchorMin =
+    // anchorMax = точка в ДОЛЯХ экрана (0..1 по X и Y), плюс фиксированный
+    // размер в пикселях. Это специально не через LayoutGroup (Vertical/
+    // HorizontalLayoutGroup) — с ними реальный размер/позиция зависели от
+    // настроек childControl и легко "уезжали" за экран при непривычном
+    // соотношении сторон окна. Точка-в-долях-экрана всегда остаётся на
+    // экране по построению, независимо от размера окна.
     public static class EditorBuildUtils
     {
         public static void SetField(Object target, string fieldName, Object value)
@@ -52,21 +57,34 @@ namespace MathGame.EditorTools
             return rect;
         }
 
+        // anchorX/anchorY — точка в долях экрана (0 = левый/нижний край,
+        // 1 = правый/верхний, 0.5 = центр). width/height — фиксированный
+        // размер в пикселях. offsetX/offsetY — дополнительный сдвиг в
+        // пикселях от этой точки (обычно 0, кроме мелких поправок).
+        public static RectTransform AnchorAt(RectTransform rect, float anchorX, float anchorY, float width, float height, float offsetX = 0f, float offsetY = 0f)
+        {
+            rect.anchorMin = new Vector2(anchorX, anchorY);
+            rect.anchorMax = new Vector2(anchorX, anchorY);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = new Vector2(offsetX, offsetY);
+            return rect;
+        }
+
         public static GameObject CreateCanvas(Transform parent, string name)
         {
             var rect = CreateUIObject(name, parent);
             var canvas = rect.gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             var scaler = rect.gameObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            // Наш UI — вертикальные стопки элементов (кнопки одна под
-            // другой), поэтому важнее стабильная ВЫСОТА в canvas-units,
-            // чем ширина: matchWidthOrHeight = 1 привязывает масштаб к
-            // высоте экрана, и вертикальная раскладка не "уезжает" при
-            // непривычном соотношении сторон окна (например, развёрнутая
-            // на весь экран вкладка Game).
-            scaler.matchWidthOrHeight = 1f;
+            // Постоянный пиксельный размер: 1 единица UI = 1 пиксель экрана
+            // всегда, без пересчёта под соотношение сторон окна. В паре с
+            // AnchorAt (позиция — в долях экрана, а не в фиксированных
+            // canvas-координатах) это даёт предсказуемый результат на
+            // любом размере окна: где элемент оказался при разработке (по
+            // долям экрана), там он и останется.
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = 1f;
             rect.gameObject.AddComponent<GraphicRaycaster>();
             return rect.gameObject;
         }
@@ -86,41 +104,6 @@ namespace MathGame.EditorTools
             return rect;
         }
 
-        // childAlignment/spacing описаны один раз тут, чтобы все панели
-        // выглядели единообразно без ручной подгонки координат.
-        public static VerticalLayoutGroup AddVerticalLayout(RectTransform rect, int spacing = 16, TextAnchor alignment = TextAnchor.MiddleCenter)
-        {
-            var layout = rect.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = spacing;
-            layout.childAlignment = alignment;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-            layout.padding = new RectOffset(40, 40, 40, 40);
-            return layout;
-        }
-
-        public static HorizontalLayoutGroup AddHorizontalLayout(RectTransform rect, int spacing = 12, TextAnchor alignment = TextAnchor.MiddleLeft)
-        {
-            var layout = rect.gameObject.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = spacing;
-            layout.childAlignment = alignment;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-            return layout;
-        }
-
-        // Прежде здесь только выставлялся LayoutElement, а группы компоновки
-        // были настроены с childControlWidth/Height = false — то есть сам
-        // размер элемента LayoutElement полностью игнорировал, оставался
-        // стандартный RectTransform 100x100 у любого свежесозданного
-        // объекта. Из-за этого все кнопки/полосы выглядели одинаковыми
-        // квадратами вместо задуманных размеров. Теперь sizeDelta
-        // выставляется напрямую — реальный размер уже не зависит от того,
-        // слушает его группа компоновки или нет.
         public static LayoutElement SetPreferredSize(GameObject go, float width, float height)
         {
             var rect = go.GetComponent<RectTransform>();
@@ -141,14 +124,14 @@ namespace MathGame.EditorTools
             tmp.fontSize = fontSize;
             tmp.color = color;
             tmp.alignment = alignment;
-            SetPreferredSize(rect.gameObject, width, height);
+            rect.sizeDelta = new Vector2(width, height);
             return tmp;
         }
 
         public static Button CreateButton(Transform parent, string name, string label, float width = 260, float height = 60, int fontSize = 28)
         {
             var rect = CreateUIObject(name, parent);
-            SetPreferredSize(rect.gameObject, width, height);
+            rect.sizeDelta = new Vector2(width, height);
 
             var image = rect.gameObject.AddComponent<Image>();
             image.color = new Color(1f, 1f, 1f, 0.9f);
@@ -170,7 +153,7 @@ namespace MathGame.EditorTools
         public static Image CreateIcon(Transform parent, string name, Color color, float width, float height)
         {
             var rect = CreateUIObject(name, parent);
-            SetPreferredSize(rect.gameObject, width, height);
+            rect.sizeDelta = new Vector2(width, height);
             var image = rect.gameObject.AddComponent<Image>();
             image.color = color;
             return image;
@@ -179,7 +162,7 @@ namespace MathGame.EditorTools
         public static Slider CreateSlider(Transform parent, string name, float min, float max, float value, float width = 300, float height = 24)
         {
             var rect = CreateUIObject(name, parent);
-            SetPreferredSize(rect.gameObject, width, height);
+            rect.sizeDelta = new Vector2(width, height);
 
             var bg = rect.gameObject.AddComponent<Image>();
             bg.color = new Color(0.25f, 0.25f, 0.25f);
@@ -214,7 +197,7 @@ namespace MathGame.EditorTools
         public static Toggle CreateToggle(Transform parent, string name, bool isOn, float boxSize = 28)
         {
             var rect = CreateUIObject(name, parent);
-            SetPreferredSize(rect.gameObject, boxSize, boxSize);
+            rect.sizeDelta = new Vector2(boxSize, boxSize);
 
             var bg = rect.gameObject.AddComponent<Image>();
             bg.color = new Color(0.25f, 0.25f, 0.25f);
@@ -232,29 +215,31 @@ namespace MathGame.EditorTools
             return toggle;
         }
 
-        // Одна строка "подпись + слайдер + число" в настройках, чтобы не
-        // повторять эту связку кода 4 раза.
-        public static (Slider slider, TextMeshProUGUI valueLabel) CreateSliderRow(Transform parent, string rowName, string labelText, float min, float max, float value)
+        // Одна строка "подпись + слайдер + число" в настройках — все три
+        // элемента независимо закреплены по вертикальной доле экрана
+        // (yAnchor), с разными фиксированными горизонтальными долями, а не
+        // вложены в общий контейнер со своей раскладкой.
+        public static (Slider slider, TextMeshProUGUI valueLabel) CreateSliderRow(Transform parent, string rowName, string labelText, float min, float max, float value, float yAnchor)
         {
-            var row = CreateUIObject(rowName, parent);
-            SetPreferredSize(row.gameObject, 820, 40);
-            AddHorizontalLayout(row, 12, TextAnchor.MiddleLeft);
+            var label = CreateLabel(parent, rowName + "_Label", labelText, 20, Color.white, 340, 34, TextAlignmentOptions.MidlineRight);
+            AnchorAt(label.rectTransform, 0.32f, yAnchor, 340, 34);
 
-            CreateLabel(row, "Label", labelText, 22, Color.white, 320, 34);
-            var slider = CreateSlider(row, "Slider", min, max, value, 320, 24);
-            var valueLabel = CreateLabel(row, "Value", value.ToString("0.##"), 22, Color.white, 100, 34, TextAlignmentOptions.MidlineRight);
+            var slider = CreateSlider(parent, rowName + "_Slider", min, max, value, 260, 20);
+            AnchorAt(slider.GetComponent<RectTransform>(), 0.55f, yAnchor, 260, 20);
+
+            var valueLabel = CreateLabel(parent, rowName + "_Value", value.ToString("0.##"), 20, Color.white, 90, 34, TextAlignmentOptions.MidlineLeft);
+            AnchorAt(valueLabel.rectTransform, 0.74f, yAnchor, 90, 34);
 
             return (slider, valueLabel);
         }
 
-        public static (Toggle toggle, TextMeshProUGUI label) CreateToggleRow(Transform parent, string rowName, string labelText, bool isOn)
+        public static (Toggle toggle, TextMeshProUGUI label) CreateToggleRow(Transform parent, string rowName, string labelText, bool isOn, float yAnchor)
         {
-            var row = CreateUIObject(rowName, parent);
-            SetPreferredSize(row.gameObject, 820, 34);
-            AddHorizontalLayout(row, 12, TextAnchor.MiddleLeft);
+            var toggle = CreateToggle(parent, rowName + "_Toggle", isOn);
+            AnchorAt(toggle.GetComponent<RectTransform>(), 0.30f, yAnchor, 26, 26);
 
-            var toggle = CreateToggle(row, "Toggle", isOn);
-            var label = CreateLabel(row, "Label", labelText, 22, Color.white, 400, 34);
+            var label = CreateLabel(parent, rowName + "_Label", labelText, 20, Color.white, 300, 30, TextAlignmentOptions.MidlineLeft);
+            AnchorAt(label.rectTransform, 0.47f, yAnchor, 300, 30);
 
             return (toggle, label);
         }

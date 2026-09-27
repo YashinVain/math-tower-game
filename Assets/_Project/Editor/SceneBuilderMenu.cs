@@ -190,11 +190,15 @@ namespace MathGame.EditorTools
         private static (GameObject panelGo, Button play, Button settings, Button quit) BuildMainPanel(Transform canvasTransform)
         {
             var panel = CreateFullScreenPanel(canvasTransform, "MainPanel");
-            AddVerticalLayout(panel, 24, TextAnchor.MiddleCenter);
 
-            var play = CreateButton(panel, "PlayButton", "Играть", 300, 70, 32);
-            var settings = CreateButton(panel, "SettingsButton", "Настройки", 300, 70, 32);
-            var quit = CreateButton(panel, "QuitButton", "Выход", 300, 70, 32);
+            var play = CreateButton(panel, "PlayButton", "Играть", 320, 80, 32);
+            AnchorAt(play.GetComponent<RectTransform>(), 0.5f, 0.62f, 320, 80);
+
+            var settings = CreateButton(panel, "SettingsButton", "Настройки", 320, 80, 32);
+            AnchorAt(settings.GetComponent<RectTransform>(), 0.5f, 0.48f, 320, 80);
+
+            var quit = CreateButton(panel, "QuitButton", "Выход", 320, 80, 32);
+            AnchorAt(quit.GetComponent<RectTransform>(), 0.5f, 0.34f, 320, 80);
 
             return (panel.gameObject, play, settings, quit);
         }
@@ -202,24 +206,23 @@ namespace MathGame.EditorTools
         private static (GameObject panelGo, Button back) BuildLevelSelectPanel(Transform canvasTransform)
         {
             var panel = CreateFullScreenPanel(canvasTransform, "LevelSelectPanel");
-            AddVerticalLayout(panel, 20, TextAnchor.UpperCenter);
 
-            var back = CreateButton(panel, "BackButton", "Назад", 200, 60, 24);
+            var back = CreateButton(panel, "BackButton", "Назад", 180, 60, 24);
+            AnchorAt(back.GetComponent<RectTransform>(), 0.12f, 0.90f, 180, 60);
 
             var container = CreateUIObject("ButtonsContainer", panel);
-            SetPreferredSize(container.gameObject, 1600, 160);
+            AnchorAt(container, 0.5f, 0.55f, 900, 160);
             var grid = container.gameObject.AddComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(160, 160);
             grid.spacing = new Vector2(20, 20);
-            grid.childAlignment = TextAnchor.UpperCenter;
+            grid.childAlignment = TextAnchor.MiddleCenter;
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 5;
 
-            // Контейнер фиксированной ширины (5 колонок), но с автоподгонкой
-            // высоты под реальное число уровней — иначе с запасом "на
-            // будущее" (например 1600x800 под много уровней) при всего 1-2
-            // уровнях остаётся гигантский пустой хвост, из-за которого вся
-            // раскладка визуально "уезжает" за пределы экрана.
+            // Автоподгонка высоты под реальное число уровней (растёт вниз
+            // и вверх от центра, т.к. у контейнера pivot по центру) —
+            // иначе с запасом "на будущее" при всего 1-2 уровнях остаётся
+            // пустой хвост.
             var fitter = container.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
@@ -238,34 +241,45 @@ namespace MathGame.EditorTools
         private static (GameObject panelGo, Button back) BuildSettingsPanel(Transform canvasTransform)
         {
             var panel = CreateFullScreenPanel(canvasTransform, "SettingsPanel");
-            AddVerticalLayout(panel, 10, TextAnchor.UpperCenter);
 
-            var (numberMinSlider, numberMinLabel) = CreateSliderRow(panel, "NumberMinRow", "Мин. число", 0, 20, 1);
-            var (numberMaxSlider, numberMaxLabel) = CreateSliderRow(panel, "NumberMaxRow", "Макс. число", 1, 50, 10);
+            float y = 0.90f;
+            const float step = 0.075f;
 
-            var (additionToggle, _) = CreateToggleRow(panel, "AdditionRow", "Сложение", true);
-            var (subtractionToggle, _) = CreateToggleRow(panel, "SubtractionRow", "Вычитание", false);
-            var (multiplicationToggle, _) = CreateToggleRow(panel, "MultiplicationRow", "Умножение", false);
-            var (divisionToggle, _) = CreateToggleRow(panel, "DivisionRow", "Деление", false);
+            var (numberMinSlider, numberMinLabel) = CreateSliderRow(panel, "NumberMinRow", "Мин. число", 0, 20, 1, y); y -= step;
+            var (numberMaxSlider, numberMaxLabel) = CreateSliderRow(panel, "NumberMaxRow", "Макс. число", 1, 50, 10, y); y -= step;
 
-            var (difficultyGrowthToggle, _) = CreateToggleRow(panel, "DifficultyGrowthRow", "Рост сложности", true);
-            var (difficultyGrowthRateSlider, difficultyGrowthRateLabel) = CreateSliderRow(panel, "DifficultyGrowthRateRow", "Скорость роста", 0f, 1f, 0.15f);
+            var (additionToggle, _) = CreateToggleRow(panel, "AdditionRow", "Сложение", true, y); y -= step;
+            var (subtractionToggle, _) = CreateToggleRow(panel, "SubtractionRow", "Вычитание", false, y); y -= step;
+            var (multiplicationToggle, _) = CreateToggleRow(panel, "MultiplicationRow", "Умножение", false, y); y -= step;
+            var (divisionToggle, _) = CreateToggleRow(panel, "DivisionRow", "Деление", false, y); y -= step;
 
-            var (timeLimitSlider, timeLimitLabel) = CreateSliderRow(panel, "TimeLimitRow", "Лимит времени, сек", 15, 300, 90);
+            var (difficultyGrowthToggle, _) = CreateToggleRow(panel, "DifficultyGrowthRow", "Рост сложности", true, y); y -= step;
+            var (difficultyGrowthRateSlider, difficultyGrowthRateLabel) = CreateSliderRow(panel, "DifficultyGrowthRateRow", "Скорость роста", 0f, 1f, 0.15f, y); y -= step;
 
-            var (doorsEasyModeToggle, _) = CreateToggleRow(panel, "DoorsEasyModeRow", "Упрощённые двери", false);
+            var (timeLimitSlider, timeLimitLabel) = CreateSliderRow(panel, "TimeLimitRow", "Лимит времени, сек", 15, 300, 90, y); y -= step;
 
-            var resetProgressButton = CreateButton(panel, "ResetProgressButton", "Сбросить прогресс", 340, 56, 22);
-            var back = CreateButton(panel, "BackButton", "Назад", 200, 56, 22);
+            var (doorsEasyModeToggle, _) = CreateToggleRow(panel, "DoorsEasyModeRow", "Упрощённые двери", false, y);
+
+            var resetProgressButton = CreateButton(panel, "ResetProgressButton", "Сбросить прогресс", 300, 56, 22);
+            AnchorAt(resetProgressButton.GetComponent<RectTransform>(), 0.35f, 0.10f, 300, 56);
+
+            var back = CreateButton(panel, "BackButton", "Назад", 180, 56, 22);
+            AnchorAt(back.GetComponent<RectTransform>(), 0.68f, 0.10f, 180, 56);
 
             var confirmRoot = CreateUIObject("ResetConfirmRoot", panel);
             StretchFull(confirmRoot);
             var confirmBg = confirmRoot.gameObject.AddComponent<Image>();
-            confirmBg.color = new Color(0f, 0f, 0f, 0.75f);
-            AddVerticalLayout(confirmRoot, 16, TextAnchor.MiddleCenter);
-            CreateLabel(confirmRoot, "WarningText", "Точно сбросить весь прогресс?", 28, Color.white, 560, 60, TextAlignmentOptions.Center);
+            confirmBg.color = new Color(0f, 0f, 0f, 0.85f);
+
+            var warning = CreateLabel(confirmRoot, "WarningText", "Точно сбросить весь прогресс?", 28, Color.white, 560, 60, TextAlignmentOptions.Center);
+            AnchorAt(warning.rectTransform, 0.5f, 0.55f, 560, 60);
+
             var yesButton = CreateButton(confirmRoot, "ResetConfirmYesButton", "Да, сбросить", 280, 60, 24);
+            AnchorAt(yesButton.GetComponent<RectTransform>(), 0.40f, 0.42f, 280, 60);
+
             var noButton = CreateButton(confirmRoot, "ResetConfirmNoButton", "Отмена", 280, 60, 24);
+            AnchorAt(noButton.GetComponent<RectTransform>(), 0.60f, 0.42f, 280, 60);
+
             confirmRoot.gameObject.SetActive(false);
 
             var settingsPanel = panel.gameObject.AddComponent<SettingsPanel>();
@@ -294,17 +308,20 @@ namespace MathGame.EditorTools
         private static GameObject BuildHud(Transform canvasTransform)
         {
             var hud = CreateUIObject("HUD", canvasTransform);
-            hud.anchorMin = new Vector2(0.5f, 1f);
-            hud.anchorMax = new Vector2(0.5f, 1f);
-            hud.pivot = new Vector2(0.5f, 1f);
-            hud.anchoredPosition = new Vector2(0, -30);
-            hud.sizeDelta = new Vector2(320, 120);
-            AddVerticalLayout(hud, 8, TextAnchor.UpperCenter);
+            AnchorAt(hud, 0.5f, 1f, 320, 120, 0f, -70f);
 
             var timerLabel = CreateLabel(hud, "TimerLabel", "01:30", 40, Color.white, 260, 60, TextAlignmentOptions.Center);
+            timerLabel.rectTransform.anchorMin = new Vector2(0.5f, 1f);
+            timerLabel.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            timerLabel.rectTransform.pivot = new Vector2(0.5f, 1f);
+            timerLabel.rectTransform.anchoredPosition = Vector2.zero;
 
             var fillBarRect = CreateUIObject("TimerFillBar", hud);
-            SetPreferredSize(fillBarRect.gameObject, 280, 18);
+            fillBarRect.anchorMin = new Vector2(0.5f, 1f);
+            fillBarRect.anchorMax = new Vector2(0.5f, 1f);
+            fillBarRect.pivot = new Vector2(0.5f, 1f);
+            fillBarRect.anchoredPosition = new Vector2(0f, -65f);
+            fillBarRect.sizeDelta = new Vector2(280, 18);
             var fillImage = fillBarRect.gameObject.AddComponent<Image>();
             fillImage.color = new Color(0.3f, 0.8f, 0.4f);
             fillImage.type = Image.Type.Filled;
@@ -323,12 +340,16 @@ namespace MathGame.EditorTools
             var panel = CreateFullScreenPanel(canvasTransform, "ResultPanel");
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.75f);
-            AddVerticalLayout(panel, 20, TextAnchor.MiddleCenter);
 
             var title = CreateLabel(panel, "TitleLabel", "Уровень пройден!", 48, Color.white, 700, 80, TextAlignmentOptions.Center);
+            AnchorAt(title.rectTransform, 0.5f, 0.62f, 700, 80);
+
             var primary = CreateButton(panel, "PrimaryButton", "Следующий уровень", 380, 70, 26);
+            AnchorAt(primary.GetComponent<RectTransform>(), 0.5f, 0.46f, 380, 70);
             var primaryLabel = primary.GetComponentInChildren<TextMeshProUGUI>();
+
             var secondary = CreateButton(panel, "SecondaryButton", "В меню", 380, 70, 26);
+            AnchorAt(secondary.GetComponent<RectTransform>(), 0.5f, 0.32f, 380, 70);
 
             var resultPanel = panel.gameObject.AddComponent<ResultPanel>();
             SetField(resultPanel, "root", panel.gameObject);
@@ -346,11 +367,15 @@ namespace MathGame.EditorTools
             var panel = CreateFullScreenPanel(canvasTransform, "PausePanel");
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.75f);
-            AddVerticalLayout(panel, 20, TextAnchor.MiddleCenter);
 
-            CreateLabel(panel, "TitleLabel", "Пауза", 44, Color.white, 400, 70, TextAlignmentOptions.Center);
+            var title = CreateLabel(panel, "TitleLabel", "Пауза", 44, Color.white, 400, 70, TextAlignmentOptions.Center);
+            AnchorAt(title.rectTransform, 0.5f, 0.62f, 400, 70);
+
             var resume = CreateButton(panel, "ResumeButton", "Продолжить", 320, 70, 26);
+            AnchorAt(resume.GetComponent<RectTransform>(), 0.5f, 0.46f, 320, 70);
+
             var exit = CreateButton(panel, "ExitButton", "Выйти", 320, 70, 26);
+            AnchorAt(exit.GetComponent<RectTransform>(), 0.5f, 0.32f, 320, 70);
 
             var pausePanel = panel.gameObject.AddComponent<PausePanel>();
             SetField(pausePanel, "root", panel.gameObject);
