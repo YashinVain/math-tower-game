@@ -77,14 +77,17 @@ namespace MathGame.EditorTools
             var canvas = rect.gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             var scaler = rect.gameObject.AddComponent<CanvasScaler>();
-            // Постоянный пиксельный размер: 1 единица UI = 1 пиксель экрана
-            // всегда, без пересчёта под соотношение сторон окна. В паре с
-            // AnchorAt (позиция — в долях экрана, а не в фиксированных
-            // canvas-координатах) это даёт предсказуемый результат на
-            // любом размере окна: где элемент оказался при разработке (по
-            // долям экрана), там он и останется.
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = 1f;
+            // ВАЖНО: позиция каждого элемента задаётся в долях экрана
+            // (см. AnchorAt) — это само по себе гарантирует, что ничего не
+            // уедет за край, независимо от режима масштабирования ниже.
+            // ScaleWithScreenSize здесь отвечает только за РАЗМЕР: без
+            // него (ConstantPixelSize) элементы фиксированного пиксельного
+            // размера выглядят гигантскими на маленьком окне и крошечными
+            // на большом — именно это и было настоящей причиной "всё
+            // растянуто"/"текст наезжает", а не позиционирование.
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.matchWidthOrHeight = 0.5f;
             rect.gameObject.AddComponent<GraphicRaycaster>();
             return rect.gameObject;
         }
