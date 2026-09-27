@@ -33,10 +33,15 @@ namespace MathGame.EditorTools
             BuildMenuScene();
             BuildGameplayScene();
 
-            AddScenesToBuildSettings();
-
+            // Важно: сохранить и обновить AssetDatabase ДО того, как
+            // добавлять сцены в Build Settings — иначе LoadAssetAtPath
+            // может ещё не видеть только что созданный .unity-файл, и
+            // сцена молча не попадёт в список (при этом лог всё равно
+            // покажет "успех", потому что сама сборка сцены не упала).
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+
+            AddScenesToBuildSettings();
 
             var bootPath = $"{ScenesFolder}/Boot.unity";
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(bootPath) != null)
@@ -370,7 +375,11 @@ namespace MathGame.EditorTools
             foreach (var path in orderedPaths)
             {
                 if (scenes.Exists(s => s.path == path)) continue;
-                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) continue;
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
+                {
+                    Debug.LogWarning($"{path} не найден через AssetDatabase — не добавлен в Build Settings. Попробуйте запустить 'MathGame/3. Build Scenes' ещё раз.");
+                    continue;
+                }
                 scenes.Add(new EditorBuildSettingsScene(path, true));
             }
 
