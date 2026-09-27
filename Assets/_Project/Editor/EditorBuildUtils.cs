@@ -60,6 +60,13 @@ namespace MathGame.EditorTools
             var scaler = rect.gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
+            // Наш UI — вертикальные стопки элементов (кнопки одна под
+            // другой), поэтому важнее стабильная ВЫСОТА в canvas-units,
+            // чем ширина: matchWidthOrHeight = 1 привязывает масштаб к
+            // высоте экрана, и вертикальная раскладка не "уезжает" при
+            // непривычном соотношении сторон окна (например, развёрнутая
+            // на весь экран вкладка Game).
+            scaler.matchWidthOrHeight = 1f;
             rect.gameObject.AddComponent<GraphicRaycaster>();
             return rect.gameObject;
         }

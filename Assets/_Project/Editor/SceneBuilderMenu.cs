@@ -150,7 +150,7 @@ namespace MathGame.EditorTools
             var cameraGo = new GameObject("Main Camera");
             var camera = cameraGo.AddComponent<Camera>();
             camera.orthographic = true;
-            camera.orthographicSize = 6f;
+            camera.orthographicSize = 3.5f;
             camera.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
             cameraGo.transform.position = new Vector3(-6f, -1f, -10f);
             cameraGo.tag = "MainCamera";
