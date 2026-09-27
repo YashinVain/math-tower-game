@@ -208,6 +208,11 @@ namespace MathGame.EditorTools
             Object.DestroyImmediate(buttonGo);
         }
 
+        // fontSize здесь — мировые единицы, не пиксели: значение 4 (как
+        // было раньше) давало буквы высотой в несколько юнитов — при
+        // расстоянии между големами в 2.5 юнита соседние примеры наезжали
+        // друг на друга (это и выглядело как "склеенные" цифры). 0.5 —
+        // размер, соразмерный самим спрайтам-заглушкам (1x1 юнит).
         private static TextMeshPro CreateWorldLabel(Transform parent, string name, float yOffset)
         {
             var go = new GameObject(name);
@@ -215,7 +220,7 @@ namespace MathGame.EditorTools
             go.transform.localPosition = new Vector3(0f, yOffset, 0f);
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 4;
+            tmp.fontSize = 0.5f;
             tmp.text = "0";
             return tmp;
         }

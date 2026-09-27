@@ -106,8 +106,19 @@ namespace MathGame.EditorTools
             return layout;
         }
 
+        // Прежде здесь только выставлялся LayoutElement, а группы компоновки
+        // были настроены с childControlWidth/Height = false — то есть сам
+        // размер элемента LayoutElement полностью игнорировал, оставался
+        // стандартный RectTransform 100x100 у любого свежесозданного
+        // объекта. Из-за этого все кнопки/полосы выглядели одинаковыми
+        // квадратами вместо задуманных размеров. Теперь sizeDelta
+        // выставляется напрямую — реальный размер уже не зависит от того,
+        // слушает его группа компоновки или нет.
         public static LayoutElement SetPreferredSize(GameObject go, float width, float height)
         {
+            var rect = go.GetComponent<RectTransform>();
+            if (rect != null) rect.sizeDelta = new Vector2(width, height);
+
             var le = go.GetComponent<LayoutElement>();
             if (le == null) le = go.AddComponent<LayoutElement>();
             le.preferredWidth = width;
