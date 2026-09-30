@@ -17,4 +17,4 @@ MonoBehaviour:
   towerSizes: 020000000300000004000000
   heroStartingPower: 5
   powerCap: 0
-  maxBeatableAtOnce: 2
+  maxBeatableAtOnce: 1
