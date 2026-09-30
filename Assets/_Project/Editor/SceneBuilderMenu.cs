@@ -150,9 +150,14 @@ namespace MathGame.EditorTools
             var cameraGo = new GameObject("Main Camera");
             var camera = cameraGo.AddComponent<Camera>();
             camera.orthographic = true;
-            camera.orthographicSize = 2.5f;
+            // Высота посчитана так, чтобы влезала самая высокая башня (4
+            // этажа по floorHeight=1.2 в TowerMinigameController, снизу от
+            // героя на уровне земли и с запасом сверху под подпись
+            // последнего этажа). Y камеры сдвинут вверх от уровня земли
+            // (-1), чтобы башня не упиралась в верхний край кадра.
+            camera.orthographicSize = 3.5f;
             camera.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
-            cameraGo.transform.position = new Vector3(-6f, -1f, -10f);
+            cameraGo.transform.position = new Vector3(-6f, 1f, -10f);
             cameraGo.tag = "MainCamera";
             cameraGo.AddComponent<AudioListener>();
             cameraGo.AddComponent<CameraFollowX>();

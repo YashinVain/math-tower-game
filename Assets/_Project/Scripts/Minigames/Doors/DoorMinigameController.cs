@@ -16,7 +16,7 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private TextMeshPro heroTargetLabel;
         [SerializeField] private DoorView doorPrefab;
         [SerializeField] private Transform doorsParent;
-        [SerializeField] private float doorSpacing = 3f;
+        [SerializeField] private float doorSpacing = 1.8f;
 
         private DoorMinigameDefinition _definition;
         private MinigameRuntimeContext _context;

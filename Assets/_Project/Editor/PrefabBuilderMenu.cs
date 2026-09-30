@@ -159,7 +159,9 @@ namespace MathGame.EditorTools
 
             var doors = new GameObject("Doors");
             doors.transform.SetParent(root.transform, false);
-            doors.transform.localPosition = new Vector3(2f, 0f, 0f);
+            // Достаточно далеко от героя, чтобы даже крайняя дверь (при
+            // 4 дверях с текущим doorSpacing) не наезжала на него.
+            doors.transform.localPosition = new Vector3(5f, 0f, 0f);
 
             SetField(controller, "heroTargetLabel", targetLabel);
             SetField(controller, "doorPrefab", doorPrefab.GetComponent<DoorView>());
@@ -215,11 +217,11 @@ namespace MathGame.EditorTools
             Object.DestroyImmediate(buttonGo);
         }
 
-        // fontSize здесь — мировые единицы, не пиксели: значение 4 (как
-        // было раньше) давало буквы высотой в несколько юнитов — при
-        // расстоянии между големами в 2.5 юнита соседние примеры наезжали
-        // друг на друга (это и выглядело как "склеенные" цифры). 0.5 —
-        // размер, соразмерный самим спрайтам-заглушкам (1x1 юнит).
+        // fontSize здесь — мировые единицы, не пиксели. 4 (было изначально)
+        // давало буквы в несколько юнитов высотой — при этажах высотой
+        // 1.2 юнита соседние примеры наезжали друг на друга ("склеенные"
+        // цифры). 0.5 (промежуточная правка) оказался, наоборот, еле виден
+        // при текущем зуме камеры. 1.0 — компромисс между этими двумя.
         private static TextMeshPro CreateWorldLabel(Transform parent, string name, float yOffset)
         {
             var go = new GameObject(name);
@@ -227,7 +229,7 @@ namespace MathGame.EditorTools
             go.transform.localPosition = new Vector3(0f, yOffset, 0f);
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 0.5f;
+            tmp.fontSize = 1.0f;
             tmp.text = "0";
             return tmp;
         }

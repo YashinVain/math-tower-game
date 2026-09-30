@@ -8,18 +8,20 @@ namespace MathGame.Minigames.Towers
 {
     // Реализация мини-игры "Башни" (см. docs/ARCHITECTURE.md — "Как
     // добавить новый тип мини-игры" описывает именно этот класс как пример).
-    // Держит свою силу героя и текущий список големов сам — с другими
-    // мини-играми в этом же уровне не делится ничем, кроме общего контракта
-    // MinigameController.
+    // Этажи одной башни растут вверх (герой стоит у подножия и не
+    // забирается наверх — бьёт снизу), а сами башни идут одна за другой по
+    // горизонтали. Держит свою силу героя и текущий список големов сам — с
+    // другими мини-играми в этом же уровне не делится ничем, кроме общего
+    // контракта MinigameController.
     public class TowerMinigameController : MinigameController
     {
         [SerializeField] private HeroView hero;
         [SerializeField] private GolemView golemPrefab;
         [SerializeField] private Transform golemSlotParent;
         [SerializeField] private TextMeshPro heroPowerLabel;
-        [SerializeField] private float golemSpacing = 2.5f;
-        [SerializeField] private float towerSpacing = 6f;
-        [SerializeField] private float approachOffset = 1.3f;
+        [SerializeField] private float floorHeight = 1.2f;
+        [SerializeField] private float towerSpacing = 5f;
+        [SerializeField] private float approachOffset = 1.5f;
         [SerializeField] private float moveDuration = 0.6f;
 
         private TowerMinigameDefinition _definition;
@@ -41,7 +43,7 @@ namespace MathGame.Minigames.Towers
         private void SpawnTower(int towerIndex)
         {
             _towerIndex = towerIndex;
-            _inputLocked = false;
+            _inputLocked = true; // ждём, пока герой дойдёт до подножия новой башни
 
             foreach (var golem in _activeGolems)
                 if (golem != null) Destroy(golem.gameObject);
@@ -49,14 +51,14 @@ namespace MathGame.Minigames.Towers
 
             int size = _definition.towerSizes[towerIndex];
             // Каждая следующая башня дальше по X — отсюда ощущение движения вперёд по локации.
-            float towerStartX = hero.transform.position.x + towerSpacing * (towerIndex + 1);
+            float towerX = hero.transform.position.x + towerSpacing * (towerIndex + 1);
             var difficulty = _context.BuildDifficulty();
 
             for (int i = 0; i < size; i++)
             {
                 Vector3 pos = new Vector3(
-                    towerStartX + i * golemSpacing,
-                    golemSlotParent.position.y,
+                    towerX,
+                    golemSlotParent.position.y + i * floorHeight,
                     golemSlotParent.position.z);
 
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);
@@ -65,7 +67,8 @@ namespace MathGame.Minigames.Towers
                 _activeGolems.Add(golem);
             }
 
-            hero.MoveTo(ApproachPositionFor(_activeGolems[0]), moveDuration);
+            Vector3 heroTarget = new Vector3(towerX - approachOffset, hero.transform.position.y, hero.transform.position.z);
+            hero.MoveTo(heroTarget, moveDuration, () => _inputLocked = false);
         }
 
         private void OnGolemSelected(GolemView golem)
@@ -73,11 +76,8 @@ namespace MathGame.Minigames.Towers
             if (_inputLocked || !_activeGolems.Contains(golem)) return;
             _inputLocked = true;
 
-            hero.MoveTo(ApproachPositionFor(golem), moveDuration * 0.5f, () =>
-            {
-                if (golem.Answer <= _heroPower) WinAgainstGolem(golem);
-                else LoseToGolem();
-            });
+            if (golem.Answer <= _heroPower) WinAgainstGolem(golem);
+            else LoseToGolem();
         }
 
         private void WinAgainstGolem(GolemView golem)
@@ -102,11 +102,6 @@ namespace MathGame.Minigames.Towers
         private void LoseToGolem()
         {
             hero.PlayDefeat(RaiseFailed);
-        }
-
-        private Vector3 ApproachPositionFor(GolemView golem)
-        {
-            return golem.transform.position - new Vector3(approachOffset, 0f, 0f);
         }
 
         private void UpdateHeroLabel()
