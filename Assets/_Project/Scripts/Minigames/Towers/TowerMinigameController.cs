@@ -64,6 +64,8 @@ namespace MathGame.Minigames.Towers
         private MinigameRuntimeContext _context;
         private int _heroPower;
         private int _towerIndex;
+        private int _maxRepresentable; // максимум, который вообще можно показать суммой двух чисел из текущего диапазона (2×MaxValue)
+        private int _maxTowerSize; // самая большая башня в списке — на неё и рассчитываем запас (см. EffectivePowerCap)
         private float _heroToTowerDistance;
         private float _towerOriginX;
         private readonly List<GolemView> _activeGolems = new List<GolemView>();
@@ -74,6 +76,8 @@ namespace MathGame.Minigames.Towers
             _definition = (TowerMinigameDefinition)definition;
             _context = context;
             _heroPower = _definition.heroStartingPower;
+            _maxTowerSize = 2;
+            foreach (int size in _definition.towerSizes) _maxTowerSize = Mathf.Max(_maxTowerSize, size);
             UpdateHeroLabel();
             ConfigureCamera();
             SpawnTower(0);
@@ -125,6 +129,7 @@ namespace MathGame.Minigames.Towers
             // умножался на towerIndex от уже сдвинутой позиции героя).
             float towerX = _towerOriginX + towerSpacing * towerIndex;
             var difficulty = _context.BuildDifficulty();
+            _maxRepresentable = difficulty.MaxValue * 2;
             var targets = PickTargets(size, difficulty);
 
             // targets.Count ВСЕГДА равен size — башня больше никогда не
@@ -167,13 +172,12 @@ namespace MathGame.Minigames.Towers
         // диапазон чисел.
         private List<int> PickTargets(int towerSize, DifficultyContext difficulty)
         {
-            int maxRepresentable = difficulty.MaxValue * 2; // максимум, который вообще можно показать суммой двух чисел из диапазона
             int requiredCount = Mathf.Clamp(_definition.maxBeatableAtOnce, 1, towerSize);
             int powerPerWin = Mathf.Max(1, _definition.powerPerWin);
 
             for (int attempt = 0; attempt < 30; attempt++)
             {
-                var targets = TryBuildTower(towerSize, requiredCount, powerPerWin, maxRepresentable, allowShortfall: false);
+                var targets = TryBuildTower(towerSize, requiredCount, powerPerWin, allowShortfall: false);
                 if (targets != null)
                 {
                     Shuffle(targets);
@@ -187,7 +191,7 @@ namespace MathGame.Minigames.Towers
             // ещё раз, разрешая взять максимум из доступного диапазона там,
             // где не хватило места (возможен редкий повтор числа), но
             // ЭТАЖ НЕ ТЕРЯЕМ и за диапазон не выходим.
-            var fallback = TryBuildTower(towerSize, requiredCount, powerPerWin, maxRepresentable, allowShortfall: true);
+            var fallback = TryBuildTower(towerSize, requiredCount, powerPerWin, allowShortfall: true);
             Shuffle(fallback);
             return fallback;
         }
@@ -196,14 +200,14 @@ namespace MathGame.Minigames.Towers
         // для очередной "пока не проходимой" цели (и allowShortfall=false) —
         // тогда PickTargets просто попробует ещё раз с новыми случайными
         // числами, а не оставит этаж неполным.
-        private List<int> TryBuildTower(int towerSize, int requiredCount, int powerPerWin, int maxRepresentable, bool allowShortfall)
+        private List<int> TryBuildTower(int towerSize, int requiredCount, int powerPerWin, bool allowShortfall)
         {
             var targets = new List<int>(towerSize);
             var usedTargets = new HashSet<int>();
 
             for (int i = 0; i < requiredCount; i++)
             {
-                int t = PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Min(Mathf.Max(0, _heroPower), maxRepresentable));
+                int t = PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Min(Mathf.Max(0, _heroPower), _maxRepresentable));
                 usedTargets.Add(t);
                 targets.Add(t);
             }
@@ -213,11 +217,27 @@ namespace MathGame.Minigames.Towers
             {
                 int priorWins = requiredCount + i; // столько побед случится ДО этого голема, если бить по порядку возрастания
                 int lo = _heroPower + 1; // строго выше НАЧАЛЬНОЙ силы героя — иначе был бы проходим сразу, до всякого выбора
-                int hi = Mathf.Min(_heroPower + priorWins * powerPerWin, maxRepresentable);
+                int hi = Mathf.Min(_heroPower + priorWins * powerPerWin, _maxRepresentable);
                 if (lo > hi)
                 {
                     if (!allowShortfall) return null;
-                    hi = Mathf.Min(maxRepresentable, lo);
+                    // Совсем нет места для "ещё не проходимой" цели в
+                    // пределах диапазона (например, сила героя уже подошла
+                    // к самому потолку того, что вообще можно показать
+                    // суммой двух чисел) — раньше здесь менялась только hi,
+                    // а lo оставался прежним (16, скажем, при hi=12), из-за
+                    // чего PickDistinctTarget получал невозможный диапазон
+                    // и в итоге возвращал число ЗА пределами диапазона —
+                    // GenerateWithAnswer потом молча подменял его на
+                    // ближайшее допустимое, и несколько таких сломанных
+                    // целей совпадали в одно и то же число (баг, который
+                    // видел игрок: три одинаковых "6 + 6" подряд). Теперь в
+                    // этом случае голем просто тоже становится сразу
+                    // проходимым (те же границы, что у обязательных выше) —
+                    // корректно, в пределах диапазона, без повторной
+                    // поломки.
+                    lo = Mathf.Min(0, _heroPower);
+                    hi = Mathf.Min(Mathf.Max(0, _heroPower), _maxRepresentable);
                 }
 
                 int t = PickDistinctTarget(usedTargets, lo, hi);
@@ -263,6 +283,26 @@ namespace MathGame.Minigames.Towers
             return lo;
         }
 
+        // Потолок роста силы героя: definition.powerCap, если его явно
+        // задали в настройках уровня, иначе — свой, рассчитанный от
+        // текущего диапазона чисел, запас. Без запаса сила героя рано или
+        // поздно дорастала бы до предела того, что вообще можно показать
+        // суммой двух чисел из диапазона (_maxRepresentable) — а тогда
+        // "ещё не проходимым" примерам самой большой башни (до
+        // _maxTowerSize-1 штук сразу) стало бы негде разместиться, и в ход
+        // шёл аварийный запасной вариант в TryBuildTower (рабочий, но менее
+        // интересный — там все примеры сразу становятся верными). Оставляя
+        // _maxTowerSize чисел свободными НАД потолком, у самой большой
+        // башни почти всегда остаётся достаточно места для честного набора
+        // "ещё не проходимых" примеров, даже когда сила героя уже у
+        // потолка.
+        private int EffectivePowerCap()
+        {
+            int headroom = Mathf.Max(1, _maxTowerSize);
+            int dynamicCap = _maxRepresentable - headroom;
+            return _definition.powerCap > 0 ? Mathf.Min(_definition.powerCap, dynamicCap) : dynamicCap;
+        }
+
         private void OnGolemSelected(GolemView golem)
         {
             if (_inputLocked || !_activeGolems.Contains(golem)) return;
@@ -276,16 +316,13 @@ namespace MathGame.Minigames.Towers
         {
             // Сила героя растёт на фиксированное powerPerWin за победу, а
             // не на "ответ этого примера" — раньше было наоборот, и из-за
-            // этого число скакало непредсказуемо, а когда сверху ещё
-            // применялся потолок между башнями, сила героя могла даже
-            // ПАДАТЬ при переходе к следующей башне (игрок это заметил и
-            // попросил сделать рост только вверх и небольшими шагами).
-            // definition.powerCap, если задан (>0), останавливает рост —
-            // но никогда не опускает уже набранную силу ниже того, что
-            // было: Mathf.Max гарантирует это, даже если powerCap задан
-            // меньше текущей силы героя по ошибке в настройках уровня.
+            // этого число скакало непредсказуемо. Потолок — см.
+            // EffectivePowerCap — только ОСТАНАВЛИВАЕТ рост (Mathf.Max не
+            // даёт силе героя опуститься ниже уже достигнутой, даже если
+            // потолок настроен меньше того, что герой уже набрал).
+            int cap = EffectivePowerCap();
             int next = _heroPower + _definition.powerPerWin;
-            _heroPower = _definition.powerCap > 0 ? Mathf.Max(_heroPower, Mathf.Min(next, _definition.powerCap)) : next;
+            _heroPower = Mathf.Max(_heroPower, Mathf.Min(next, cap));
             UpdateHeroLabel();
 
             hero.PlayVictoryPulse();
