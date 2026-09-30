@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using MathGame.Data;
 using MathGame.Minigames.Framework;
+using MathGame.Utils;
 
 namespace MathGame.Minigames.Towers
 {
@@ -22,15 +23,22 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private float floorHeight = 1.6f;
         [SerializeField] private float baseHeight = 1.5f;
         [SerializeField] private float towerSpacing = 5f;
-        [SerializeField] private float approachOffset = 2.2f;
         [SerializeField] private float moveDuration = 0.6f;
         [SerializeField] private float cameraOrthographicSize = 4.8f;
         [SerializeField] private float cameraY = 3f;
+        // Доли ширины экрана от левого края (0..1) — не мировые единицы.
+        // Герой ближе к левому краю, башня — правее центра. Пересчитываются
+        // в мировые единицы в ConfigureCamera() под реальный aspect камеры,
+        // поэтому расстановка не ломается при смене формы окна (см. ScreenLayout).
+        [SerializeField] private float heroScreenFraction = 0.3f;
+        [SerializeField] private float towerScreenFraction = 0.7f;
 
         private TowerMinigameDefinition _definition;
         private MinigameRuntimeContext _context;
         private int _heroPower;
         private int _towerIndex;
+        private float _heroToTowerDistance;
+        private float _towerOriginX;
         private readonly List<GolemView> _activeGolems = new List<GolemView>();
         private bool _inputLocked;
 
@@ -48,6 +56,11 @@ namespace MathGame.Minigames.Towers
         // камеры на оба типа мини-игр не хватает (проверено на практике).
         // Каждый тип сам настраивает высоту обзора и то, на какой Y
         // смотреть, при своём запуске — сравните с DoorMinigameController.
+        //
+        // Заодно здесь же считаем, куда на самом деле поставить героя и
+        // башню по X (ScreenLayout), а не берём готовое число: cam.aspect —
+        // это реальное соотношение сторон ИМЕННО СЕЙЧАС, какого бы размера
+        // ни было окно игрока.
         private void ConfigureCamera()
         {
             var cam = Camera.main;
@@ -56,6 +69,14 @@ namespace MathGame.Minigames.Towers
             var pos = cam.transform.position;
             pos.y = cameraY;
             cam.transform.position = pos;
+
+            float halfWidth = ScreenLayout.HalfWidth(cameraOrthographicSize, cam.aspect);
+            var follow = cam.GetComponent<CameraFollowX>();
+            if (follow != null)
+                follow.SetOffsetX(ScreenLayout.OffsetXForHeroFraction(halfWidth, heroScreenFraction));
+
+            _heroToTowerDistance = ScreenLayout.DistanceForTargetFraction(halfWidth, heroScreenFraction, towerScreenFraction);
+            _towerOriginX = hero.transform.position.x + _heroToTowerDistance;
         }
 
         private void SpawnTower(int towerIndex)
@@ -68,8 +89,14 @@ namespace MathGame.Minigames.Towers
             _activeGolems.Clear();
 
             int size = _definition.towerSizes[towerIndex];
-            // Каждая следующая башня дальше по X — отсюда ощущение движения вперёд по локации.
-            float towerX = hero.transform.position.x + towerSpacing * (towerIndex + 1);
+            // _towerOriginX — X первой башни (уже посчитан в ConfigureCamera
+            // так, чтобы герой встал на нужную долю экрана). Каждая
+            // следующая башня — просто на towerSpacing дальше от неё; так
+            // герой ощутимо идёт вперёд, но при этом ПОСЛЕ прихода снова
+            // встаёт на ту же самую долю экрана у каждой башни, а не
+            // постепенно сползает к краю, как было раньше (towerSpacing
+            // умножался на towerIndex от уже сдвинутой позиции героя).
+            float towerX = _towerOriginX + towerSpacing * towerIndex;
             var difficulty = _context.BuildDifficulty();
             var beatableSlots = PickBeatableSlots(size);
 
@@ -91,7 +118,7 @@ namespace MathGame.Minigames.Towers
                 _activeGolems.Add(golem);
             }
 
-            Vector3 heroTarget = new Vector3(towerX - approachOffset, hero.transform.position.y, hero.transform.position.z);
+            Vector3 heroTarget = new Vector3(towerX - _heroToTowerDistance, hero.transform.position.y, hero.transform.position.z);
             hero.MoveTo(heroTarget, moveDuration, () => _inputLocked = false);
         }
 

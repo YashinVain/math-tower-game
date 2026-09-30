@@ -165,11 +165,13 @@ namespace MathGame.EditorTools
 
             var doors = new GameObject("Doors");
             doors.transform.SetParent(root.transform, false);
-            // Достаточно далеко от героя, чтобы даже крайняя дверь не
-            // наезжала на него, но не настолько далеко, чтобы самая
-            // правая дверь уезжала за край экрана у камеры.
+            // Стартовая позиция для вида в редакторе до игры — в момент
+            // запуска ConfigureCamera() в DoorMinigameController сама
+            // пересчитает doorsParent.position.x под реальный aspect камеры
+            // (см. ScreenLayout), так что это число ни на что не влияет в игре.
             doors.transform.localPosition = new Vector3(4.5f, 0f, 0f);
 
+            SetField(controller, "hero", hero.transform);
             SetField(controller, "heroTargetLabel", targetLabel);
             SetField(controller, "doorPrefab", doorPrefab.GetComponent<DoorView>());
             SetField(controller, "doorsParent", doors.transform);

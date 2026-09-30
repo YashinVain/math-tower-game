@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using MathGame.Data;
 using MathGame.Minigames.Framework;
+using MathGame.Utils;
 
 namespace MathGame.Minigames.Doors
 {
@@ -13,12 +14,18 @@ namespace MathGame.Minigames.Doors
     // младшей аудитории, как в задании).
     public class DoorMinigameController : MinigameController
     {
+        [SerializeField] private Transform hero;
         [SerializeField] private TextMeshPro heroTargetLabel;
         [SerializeField] private DoorView doorPrefab;
         [SerializeField] private Transform doorsParent;
         [SerializeField] private float doorSpacing = 1.8f;
         [SerializeField] private float cameraOrthographicSize = 3.6f;
         [SerializeField] private float cameraY = -0.5f;
+        // Доли ширины экрана от левого края (0..1) — см. TowerMinigameController
+        // и ScreenLayout: тот же приём, что и у башен, только здесь двигаем
+        // не героя (он тут не ходит), а doorsParent под героя.
+        [SerializeField] private float heroScreenFraction = 0.3f;
+        [SerializeField] private float doorsScreenFraction = 0.6f;
 
         private DoorMinigameDefinition _definition;
         private MinigameRuntimeContext _context;
@@ -38,6 +45,10 @@ namespace MathGame.Minigames.Doors
 
         // Двери разложены в ряд по горизонтали (не вверх, как башни) — им
         // нужен свой обзор камеры, отдельный от TowerMinigameController.
+        //
+        // Здесь же (как и в TowerMinigameController) пересчитываем, куда
+        // реально поставить героя и группу дверей по X — под фактический
+        // aspect камеры, а не под заранее угаданное число.
         private void ConfigureCamera()
         {
             var cam = Camera.main;
@@ -46,6 +57,16 @@ namespace MathGame.Minigames.Doors
             var pos = cam.transform.position;
             pos.y = cameraY;
             cam.transform.position = pos;
+
+            float halfWidth = ScreenLayout.HalfWidth(cameraOrthographicSize, cam.aspect);
+            var follow = cam.GetComponent<CameraFollowX>();
+            if (follow != null)
+                follow.SetOffsetX(ScreenLayout.OffsetXForHeroFraction(halfWidth, heroScreenFraction));
+
+            float heroToDoorsDistance = ScreenLayout.DistanceForTargetFraction(halfWidth, heroScreenFraction, doorsScreenFraction);
+            var doorsPos = doorsParent.position;
+            doorsPos.x = hero.position.x + heroToDoorsDistance;
+            doorsParent.position = doorsPos;
         }
 
         private void SpawnRound()

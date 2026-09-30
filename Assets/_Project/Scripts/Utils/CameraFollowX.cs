@@ -17,6 +17,13 @@ namespace MathGame.Utils
 
         private float _velocity;
 
+        // Мини-игры сами решают, насколько герой должен быть сдвинут от
+        // центра экрана (см. ScreenLayout) — величина зависит от реального
+        // соотношения сторон окна на момент запуска, поэтому не может быть
+        // одной зашитой настройкой на сцене. Вызывается из
+        // ConfigureCamera() в TowerMinigameController/DoorMinigameController.
+        public void SetOffsetX(float value) => offsetX = value;
+
         private void LateUpdate()
         {
             if (Target == null) return;
