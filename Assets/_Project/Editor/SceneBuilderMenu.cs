@@ -176,7 +176,16 @@ namespace MathGame.EditorTools
             SetField(themeApplier, "backgroundRenderer", bgRenderer);
 
             var minigameHost = new GameObject("MinigameHost");
-            minigameHost.transform.position = new Vector3(-4f, -1f, 0f);
+            // Раньше тут стояло (-4,-1,0) — ещё с тех пор, когда камеру
+            // настраивали фиксированными числами. Теперь и Tower-, и
+            // DoorMinigameController сами считают, куда встать камере,
+            // ОТНОСИТЕЛЬНО реальной позиции героя (см. ScreenLayout и
+            // cameraY в обоих контроллерах) — а этот сдвиг молча прибавлялся
+            // ко всем позициям внутри (включая героя) и не был учтён в
+            // расчётах камеры по Y, из-за чего герой в игре стоял на 1
+            // юнит ниже, чем камера считала, и вылезал за нижний край
+            // экрана. Ноль — нейтральная точка, ничего не сдвигает.
+            minigameHost.transform.position = Vector3.zero;
 
             var gameFlow = new GameObject("GameFlow");
             var gameplayController = gameFlow.AddComponent<GameplayController>();

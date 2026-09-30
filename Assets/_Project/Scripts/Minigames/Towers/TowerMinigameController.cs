@@ -25,6 +25,14 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private float towerSpacing = 5f;
         [SerializeField] private float moveDuration = 0.6f;
         [SerializeField] private float cameraOrthographicSize = 5.7f;
+        // Насколько центр камеры должен быть ВЫШЕ героя по Y (не
+        // абсолютная высота в мире!). Раньше это была абсолютная мировая
+        // высота, и расчёт молча предполагал, что герой стоит на Y=0 — а
+        // MinigameHost в сцене был сдвинут на -1 по Y, так что герой на
+        // самом деле стоял ниже, чем камера считала, и вылезал за нижний
+        // край экрана. Теперь считается от реальной позиции героя (см.
+        // ConfigureCamera) — сработает, даже если герой когда-нибудь
+        // окажется в другом месте сцены.
         [SerializeField] private float cameraY = 4.3f;
         // Доли ширины экрана от левого края (0..1) — не мировые единицы.
         // Герой ближе к левому краю, башня — правее центра. Пересчитываются
@@ -41,6 +49,7 @@ namespace MathGame.Minigames.Towers
         private float _heroToTowerDistance;
         private float _towerOriginX;
         private readonly List<GolemView> _activeGolems = new List<GolemView>();
+        private readonly HashSet<GolemView> _requiredGolems = new HashSet<GolemView>();
         private bool _inputLocked;
 
         public override void Begin(MinigameDefinition definition, MinigameRuntimeContext context)
@@ -68,7 +77,7 @@ namespace MathGame.Minigames.Towers
             if (cam == null) return;
             cam.orthographicSize = cameraOrthographicSize;
             var pos = cam.transform.position;
-            pos.y = cameraY;
+            pos.y = hero.transform.position.y + cameraY;
             cam.transform.position = pos;
 
             float halfWidth = ScreenLayout.HalfWidth(cameraOrthographicSize, cam.aspect);
@@ -88,6 +97,7 @@ namespace MathGame.Minigames.Towers
             foreach (var golem in _activeGolems)
                 if (golem != null) Destroy(golem.gameObject);
             _activeGolems.Clear();
+            _requiredGolems.Clear();
 
             int size = _definition.towerSizes[towerIndex];
             // _towerOriginX — X первой башни (уже посчитан в ConfigureCamera
@@ -113,13 +123,19 @@ namespace MathGame.Minigames.Towers
                     golemSlotParent.position.y + baseHeight + i * floorHeight,
                     golemSlotParent.position.z);
 
+                bool isRequired = beatableSlots.Contains(i);
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);
-                var problem = beatableSlots.Contains(i)
-                    ? GenerateProblemRelativeToPower(difficulty, beatable: true, usedTargets)
-                    : GenerateProblemRelativeToPower(difficulty, beatable: false, usedTargets);
+                var problem = GenerateProblemRelativeToPower(difficulty, beatable: isRequired, usedTargets);
                 usedTargets.Add(problem.Answer);
                 golem.Init(problem, OnGolemSelected);
                 _activeGolems.Add(golem);
+                // "Непроходимые" големы задуманы как ловушка, которую нужно
+                // распознать и не трогать — а не как обязательная ступень.
+                // Обязательны для прохождения башни только "проходимые"
+                // (см. WinAgainstGolem): иначе тур становится непроходимым
+                // в принципе, ведь единственный способ "победить" ловушку —
+                // проиграть уровень.
+                if (isRequired) _requiredGolems.Add(golem);
             }
 
             Vector3 heroTarget = new Vector3(towerX - _heroToTowerDistance, hero.transform.position.y, hero.transform.position.z);
@@ -198,25 +214,40 @@ namespace MathGame.Minigames.Towers
         {
             _heroPower += golem.Answer;
             // Предел силы героя: definition.powerCap, если его явно задали
-            // в настройках уровня, иначе — MaxValue из текущего диапазона
-            // чисел. Без этого сила героя со временем перерастает то, что
-            // вообще можно выразить суммой двух чисел из диапазона — и
-            // тогда "непроходимый" пример для голема неизбежно приходится
-            // показывать с числом за пределами настроек (баг, который
-            // видел игрок: "11 + 6" при диапазоне 0..6). Держа силу героя
-            // не выше MaxValue, всегда остаётся запас чисел ВЫШЕ его силы,
-            // но всё ещё внутри 2×MaxValue — как раз для непроходимых.
-            int cap = _definition.powerCap > 0 ? _definition.powerCap : _difficultyMaxValue;
+            // в настройках уровня, иначе — 1.5×MaxValue из текущего
+            // диапазона чисел. Без верхнего предела вообще сила героя со
+            // временем перерастает то, что вообще можно выразить суммой
+            // двух чисел из диапазона — и тогда "непроходимый" пример для
+            // голема неизбежно приходится показывать с числом за пределами
+            // настроек (баг, который видел игрок: "11 + 6" при диапазоне
+            // 0..6). Раньше предел стоял ровно в MaxValue — этого хватало
+            // для защиты от бага, но герой почти сразу после старта упирался
+            // в потолок и переставал расти вообще (другая жалоба игрока:
+            // "счётчик силы не добавляет цифры") — 1.5×MaxValue оставляет
+            // заметный рост силы и всё ещё держит запас выше потолка
+            // (вплоть до 2×MaxValue) для непроходимых примеров.
+            int cap = _definition.powerCap > 0 ? _definition.powerCap : Mathf.RoundToInt(_difficultyMaxValue * 1.5f);
             _heroPower = Mathf.Min(_heroPower, cap);
             UpdateHeroLabel();
 
             hero.PlayVictoryPulse();
+            _requiredGolems.Remove(golem);
             golem.PlayDefeatedByHero(() =>
             {
                 _activeGolems.Remove(golem);
                 _inputLocked = false;
 
-                if (_activeGolems.Count > 0) return; // ждём, какого голема игрок выберет следующим
+                if (_requiredGolems.Count > 0) return; // остались ещё обязательные ("проходимые") големы
+
+                // Все обязательные побеждены — башня пройдена. Оставшиеся
+                // "непроходимые" — это ловушки, которые игрок правильно
+                // обошёл: они больше не нужны, убираем сразу, а не
+                // оставляем стоять (и кликабельными!) пока герой идёт
+                // дальше — иначе случайный клик по ним убьёт героя уже
+                // ПОСЛЕ того, как башня по сути пройдена.
+                foreach (var leftover in _activeGolems)
+                    if (leftover != null) Destroy(leftover.gameObject);
+                _activeGolems.Clear();
 
                 if (_towerIndex + 1 < _definition.towerSizes.Count) SpawnTower(_towerIndex + 1);
                 else RaiseCompleted();

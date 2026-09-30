@@ -25,7 +25,11 @@ namespace MathGame.Minigames.Doors
         // стоит у самого низа экрана ("на полу"), в дверях — почти
         // посередине. Camera Y пересчитан так, чтобы герой оказался на той
         // же ДОЛЕ высоты экрана от низа, что и в TowerMinigameController
-        // (~12%) — то есть тоже "на полу", а не парил в воздухе.
+        // (~12%) — то есть тоже "на полу", а не парил в воздухе. Это
+        // смещение ОТ реальной позиции героя (см. ConfigureCamera), а не
+        // абсолютная высота в мире — иначе, как уже было с башнями, любой
+        // сдвиг родительского объекта в сцене снова столкнул бы героя за
+        // нижний край экрана незаметно для этого числа.
         [SerializeField] private float cameraY = 2.7f;
         // Доли ширины экрана от левого края (0..1) — см. TowerMinigameController
         // и ScreenLayout: тот же приём, что и у башен, только здесь двигаем
@@ -61,7 +65,7 @@ namespace MathGame.Minigames.Doors
             if (cam == null) return;
             cam.orthographicSize = cameraOrthographicSize;
             var pos = cam.transform.position;
-            pos.y = cameraY;
+            pos.y = hero.position.y + cameraY;
             cam.transform.position = pos;
 
             float halfWidth = ScreenLayout.HalfWidth(cameraOrthographicSize, cam.aspect);
