@@ -92,7 +92,9 @@ namespace MathGame.UI.Menu
             // уже применяет GameSettingsData.ClampNumberRange при загрузке,
             // это просто подстраховка на случай, если settings.Current
             // подменили как-то иначе).
-            if (settings.numberRangeMax - settings.numberRangeMin < GameSettingsData.MinNumberRangeWidth)
+            bool rangeNeedsFix = settings.numberRangeMax - settings.numberRangeMin < GameSettingsData.MinNumberRangeWidth
+                || settings.numberRangeMin > GameSettingsData.MaxNumberRangeMin;
+            if (rangeNeedsFix)
                 OnChanged(); // сам пересчитает и сохранит через ClampNumberRange
         }
 
@@ -117,16 +119,18 @@ namespace MathGame.UI.Menu
             OnChanged();
         }
 
-        // Держит numberRangeMax как минимум на GameSettingsData.MinNumberRangeWidth
-        // больше numberRangeMin — всегда подтягивая "макс.", а не "мин." (у
-        // слайдера минимума потолок 20, у слайдера максимума потолок 50, так
-        // что места хватит с большим запасом). Так игрок не может зажать
-        // диапазон до одного-двух чисел ни подняв "мин.", ни опустив
-        // "макс.", а оба слайдера на экране всегда показывают то, что
-        // реально сохранено.
+        // Держит numberRangeMin не выше GameSettingsData.MaxNumberRangeMin
+        // (иначе сумму двух чисел из диапазона нельзя сделать маленькой —
+        // см. подробный комментарий там) и numberRangeMax — как минимум на
+        // GameSettingsData.MinNumberRangeWidth больше numberRangeMin, всегда
+        // подтягивая "макс.", а не "мин." (у слайдера максимума потолок 50,
+        // места хватит с большим запасом). Так игрок не может ни поднять
+        // "мин." настолько, что маленькие примеры станут непостроимыми, ни
+        // зажать весь диапазон до нескольких чисел, а оба слайдера на
+        // экране всегда показывают то, что реально сохранено.
         private void ClampNumberRange(out int min, out int max)
         {
-            min = Mathf.RoundToInt(numberMinSlider.value);
+            min = Mathf.Clamp(Mathf.RoundToInt(numberMinSlider.value), 0, GameSettingsData.MaxNumberRangeMin);
             max = Mathf.Max(Mathf.RoundToInt(numberMaxSlider.value), min + GameSettingsData.MinNumberRangeWidth);
 
             numberMinSlider.SetValueWithoutNotify(min);

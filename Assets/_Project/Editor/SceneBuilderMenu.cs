@@ -275,8 +275,14 @@ namespace MathGame.EditorTools
             float y = 0.90f;
             const float step = 0.075f;
 
-            var (numberMinSlider, numberMinLabel) = CreateSliderRow(panel, "NumberMinRow", "Мин. число", 0, 20, 1, y); y -= step;
-            var (numberMaxSlider, numberMaxLabel) = CreateSliderRow(panel, "NumberMaxRow", "Макс. число", 1, 50, 10, y); y -= step;
+            // Верхняя граница слайдера "Мин. число" — ровно
+            // GameSettingsData.MaxNumberRangeMin (2): выше поднять нельзя,
+            // иначе сумму двух чисел из диапазона нельзя сделать маленькой
+            // (см. подробности в GameSettingsData). Слайдер физически не
+            // даёт задрать значение выше — не приходится "откатывать" его
+            // обратно после того, как игрок уже подвинул ползунок.
+            var (numberMinSlider, numberMinLabel) = CreateSliderRow(panel, "NumberMinRow", "Мин. число", 0, GameSettingsData.MaxNumberRangeMin, 1, y); y -= step;
+            var (numberMaxSlider, numberMaxLabel) = CreateSliderRow(panel, "NumberMaxRow", "Макс. число", 1, 50, 16, y); y -= step;
 
             var (additionToggle, _) = CreateToggleRow(panel, "AdditionRow", "Сложение", true, y); y -= step;
             var (subtractionToggle, _) = CreateToggleRow(panel, "SubtractionRow", "Вычитание", false, y); y -= step;

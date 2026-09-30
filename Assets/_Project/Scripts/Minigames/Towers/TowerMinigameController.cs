@@ -177,7 +177,7 @@ namespace MathGame.Minigames.Towers
 
             for (int attempt = 0; attempt < 30; attempt++)
             {
-                var targets = TryBuildTower(towerSize, requiredCount, powerPerWin, allowShortfall: false);
+                var targets = TryBuildTower(towerSize, requiredCount, powerPerWin, difficulty, allowShortfall: false);
                 if (targets != null)
                 {
                     Shuffle(targets);
@@ -191,7 +191,7 @@ namespace MathGame.Minigames.Towers
             // ещё раз, разрешая взять максимум из доступного диапазона там,
             // где не хватило места (возможен редкий повтор числа), но
             // ЭТАЖ НЕ ТЕРЯЕМ и за диапазон не выходим.
-            var fallback = TryBuildTower(towerSize, requiredCount, powerPerWin, allowShortfall: true);
+            var fallback = TryBuildTower(towerSize, requiredCount, powerPerWin, difficulty, allowShortfall: true);
             Shuffle(fallback);
             return fallback;
         }
@@ -200,14 +200,28 @@ namespace MathGame.Minigames.Towers
         // для очередной "пока не проходимой" цели (и allowShortfall=false) —
         // тогда PickTargets просто попробует ещё раз с новыми случайными
         // числами, а не оставит этаж неполным.
-        private List<int> TryBuildTower(int towerSize, int requiredCount, int powerPerWin, bool allowShortfall)
+        private List<int> TryBuildTower(int towerSize, int requiredCount, int powerPerWin, DifficultyContext difficulty, bool allowShortfall)
         {
             var targets = new List<int>(towerSize);
             var usedTargets = new HashSet<int>();
 
+            // Сумму двух чисел из диапазона (сложение) нельзя сделать
+            // меньше, чем 2×MinValue — если "сразу проходимой" цели
+            // позволить быть меньше этого, GenerateWithAnswer не сможет
+            // построить пример под неё и молча подставит ближайшее
+            // возможное число, а оно окажется БОЛЬШЕ силы героя (баг,
+            // который видел игрок: два одинаковых "4 + 4" при силе героя 5,
+            // потому что numberRangeMin был выставлен слишком высоко). В
+            // игре есть отдельная защита в настройках (GameSettingsData.
+            // MaxNumberRangeMin), которая не даёт этому вообще возникнуть,
+            // но граница здесь — подстраховка на тот случай, если
+            // настройки всё же придут "неудобными".
+            int minAchievable = difficulty.MinValue * 2;
             for (int i = 0; i < requiredCount; i++)
             {
-                int t = PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Min(Mathf.Max(0, _heroPower), _maxRepresentable));
+                int lo = Mathf.Min(minAchievable, Mathf.Max(0, _heroPower));
+                int hi = Mathf.Min(Mathf.Max(lo, _heroPower), _maxRepresentable);
+                int t = PickDistinctTarget(usedTargets, lo, hi);
                 usedTargets.Add(t);
                 targets.Add(t);
             }
@@ -245,8 +259,8 @@ namespace MathGame.Minigames.Towers
                     // проходимым (те же границы, что у обязательных выше) —
                     // корректно, в пределах диапазона, без повторной
                     // поломки.
-                    lo = Mathf.Min(0, _heroPower);
-                    hi = Mathf.Min(Mathf.Max(0, _heroPower), _maxRepresentable);
+                    lo = Mathf.Min(minAchievable, Mathf.Max(0, _heroPower));
+                    hi = Mathf.Min(Mathf.Max(lo, _heroPower), _maxRepresentable);
                 }
 
                 int t = PickDistinctTarget(usedTargets, lo, hi);
