@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,14 +32,49 @@ namespace MathGame.EditorTools
             so.ApplyModifiedProperties();
         }
 
-        public static Sprite CreatePlaceholderSprite(Color color)
+        private const string PlaceholderSpritePath = "Assets/_Project/Art/PlaceholderSquare.png";
+
+        // ВАЖНО: раньше здесь был Sprite.Create() из текстуры, созданной
+        // прямо в памяти — это работает, пока редактор открыт, но у такого
+        // спрайта нет файла на диске (GUID), поэтому Unity не может
+        // сослаться на него из СОХРАНЁННОГО префаба/сцены: при сохранении
+        // ссылка превращалась в "None (Sprite)", и объект становился
+        // невидимым (ровно это и произошло с героем — позиция была верной,
+        // просто рисовать было нечего). Правильный способ — сохранить один
+        // настоящий файл-спрайт на диске один раз и переиспользовать его
+        // everywhere, а нужный цвет каждого объекта задавать отдельно через
+        // SpriteRenderer.color (он умножается на цвет спрайта — белый
+        // спрайт + любой цвет тонировки = сплошной цвет, без отдельной
+        // текстуры на каждый оттенок).
+        public static Sprite GetPlaceholderSprite()
         {
-            var texture = new Texture2D(4, 4) { name = "PlaceholderSquare" };
-            var pixels = new Color[16];
-            for (int i = 0; i < pixels.Length; i++) pixels[i] = color;
-            texture.SetPixels(pixels);
+            var existing = AssetDatabase.LoadAssetAtPath<Sprite>(PlaceholderSpritePath);
+            if (existing != null) return existing;
+
+            var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+            var pixels = new Color32[16];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(255, 255, 255, 255);
+            texture.SetPixels32(pixels);
             texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
+            byte[] pngData = texture.EncodeToPNG();
+            Object.DestroyImmediate(texture);
+
+            var directory = Path.GetDirectoryName(PlaceholderSpritePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            File.WriteAllBytes(PlaceholderSpritePath, pngData);
+            AssetDatabase.ImportAsset(PlaceholderSpritePath, ImportAssetOptions.ForceUpdate);
+
+            var importer = (TextureImporter)AssetImporter.GetAtPath(PlaceholderSpritePath);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 4f;
+            importer.filterMode = FilterMode.Point;
+            importer.mipmapEnabled = false;
+            importer.SaveAndReimport();
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(PlaceholderSpritePath);
         }
 
         public static RectTransform CreateUIObject(string name, Transform parent)

@@ -64,7 +64,9 @@ namespace MathGame.EditorTools
             }
 
             var golem = new GameObject("Golem");
-            golem.AddComponent<SpriteRenderer>().sprite = CreatePlaceholderSprite(new Color(0.45f, 0.2f, 0.55f));
+            var golemRenderer = golem.AddComponent<SpriteRenderer>();
+            golemRenderer.sprite = GetPlaceholderSprite();
+            golemRenderer.color = new Color(0.45f, 0.2f, 0.55f);
             golem.AddComponent<BoxCollider2D>();
             var golemView = golem.AddComponent<GolemView>();
 
@@ -91,7 +93,9 @@ namespace MathGame.EditorTools
             var hero = new GameObject("Hero");
             hero.transform.SetParent(root.transform, false);
             hero.transform.localPosition = new Vector3(-2f, 0f, 0f);
-            hero.AddComponent<SpriteRenderer>().sprite = CreatePlaceholderSprite(new Color(0.3f, 0.6f, 1f));
+            var heroRenderer = hero.AddComponent<SpriteRenderer>();
+            heroRenderer.sprite = GetPlaceholderSprite();
+            heroRenderer.color = new Color(0.3f, 0.6f, 1f);
             var heroView = hero.AddComponent<HeroView>();
 
             var powerLabel = CreateWorldLabel(hero.transform, "PowerLabel", 1f);
@@ -119,7 +123,8 @@ namespace MathGame.EditorTools
 
             var door = new GameObject("Door");
             var renderer = door.AddComponent<SpriteRenderer>();
-            renderer.sprite = CreatePlaceholderSprite(new Color(0.55f, 0.35f, 0.2f));
+            renderer.sprite = GetPlaceholderSprite();
+            renderer.color = new Color(0.55f, 0.35f, 0.2f);
             door.AddComponent<BoxCollider2D>();
             var doorView = door.AddComponent<DoorView>();
 
@@ -146,7 +151,9 @@ namespace MathGame.EditorTools
 
             var hero = new GameObject("Hero");
             hero.transform.SetParent(root.transform, false);
-            hero.AddComponent<SpriteRenderer>().sprite = CreatePlaceholderSprite(new Color(0.3f, 0.6f, 1f));
+            var doorHeroRenderer = hero.AddComponent<SpriteRenderer>();
+            doorHeroRenderer.sprite = GetPlaceholderSprite();
+            doorHeroRenderer.color = new Color(0.3f, 0.6f, 1f);
 
             var targetLabel = CreateWorldLabel(hero.transform, "HeroTargetLabel", 1f);
 

@@ -161,7 +161,8 @@ namespace MathGame.EditorTools
             background.transform.position = new Vector3(-6f, -1f, 10f);
             background.transform.localScale = new Vector3(40f, 20f, 1f);
             var bgRenderer = background.AddComponent<SpriteRenderer>();
-            bgRenderer.sprite = CreatePlaceholderSprite(new Color(0.7f, 0.85f, 0.95f));
+            bgRenderer.sprite = GetPlaceholderSprite();
+            bgRenderer.color = new Color(0.7f, 0.85f, 0.95f);
             bgRenderer.sortingOrder = -10;
             var themeApplier = background.AddComponent<LevelThemeApplier>();
             SetField(themeApplier, "backgroundRenderer", bgRenderer);
