@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ec494e7b6f7ba61479674341bf05c376, type: 3}
-  m_Name: Theme_Level2
+  m_Name: Theme_Level6
   m_EditorClassIdentifier: Assembly-CSharp::MathGame.Data.LevelVisualTheme
   backgroundSprite: {fileID: 0}
-  ambientTint: {r: 0.7022222, g: 0.78000003, b: 0.8888889, a: 1}
-  darknessAmount: 0.07777778
+  ambientTint: {r: 0.5111111, g: 0.5, b: 0.6444444, a: 1}
+  darknessAmount: 0.3888889
