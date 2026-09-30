@@ -212,12 +212,21 @@ namespace MathGame.Minigames.Towers
                 targets.Add(t);
             }
 
+            int cap = EffectivePowerCap(); // WinAgainstGolem обрежет реальный рост героя этим же потолком — окно ниже должно предполагать ТО ЖЕ САМОЕ, иначе цель может оказаться недостижимой на практике (см. комментарий у EffectivePowerCap)
             int notYetCount = towerSize - requiredCount;
             for (int i = 0; i < notYetCount; i++)
             {
                 int priorWins = requiredCount + i; // столько побед случится ДО этого голема, если бить по порядку возрастания
                 int lo = _heroPower + 1; // строго выше НАЧАЛЬНОЙ силы героя — иначе был бы проходим сразу, до всякого выбора
-                int hi = Mathf.Min(_heroPower + priorWins * powerPerWin, _maxRepresentable);
+                // Сила героя после priorWins побед НЕ МОЖЕТ превысить cap
+                // (WinAgainstGolem гарантирует это на каждой победе) — если
+                // здесь взять "сила героя + priorWins×powerPerWin" без учёта
+                // cap, окно может обещать цель, которую герой физически не
+                // успеет достичь, потому что рост остановится раньше
+                // (баг, который видел игрок: два примера остались больше
+                // силы героя навсегда, потому что рост упёрся в потолок
+                // раньше, чем построенные здесь цели предполагали).
+                int hi = Mathf.Min(Mathf.Min(_heroPower + priorWins * powerPerWin, cap), _maxRepresentable);
                 if (lo > hi)
                 {
                     if (!allowShortfall) return null;
