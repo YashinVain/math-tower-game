@@ -20,6 +20,7 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private Transform golemSlotParent;
         [SerializeField] private TextMeshPro heroPowerLabel;
         [SerializeField] private float floorHeight = 1.2f;
+        [SerializeField] private float baseHeight = 1.5f;
         [SerializeField] private float towerSpacing = 5f;
         [SerializeField] private float approachOffset = 1.5f;
         [SerializeField] private float moveDuration = 0.6f;
@@ -56,9 +57,12 @@ namespace MathGame.Minigames.Towers
 
             for (int i = 0; i < size; i++)
             {
+                // baseHeight поднимает нижний этаж над головой героя — иначе
+                // этаж 0 оказывается на одной высоте с героем, и подпись
+                // силы героя накладывается на подпись первого примера.
                 Vector3 pos = new Vector3(
                     towerX,
-                    golemSlotParent.position.y + i * floorHeight,
+                    golemSlotParent.position.y + baseHeight + i * floorHeight,
                     golemSlotParent.position.z);
 
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);

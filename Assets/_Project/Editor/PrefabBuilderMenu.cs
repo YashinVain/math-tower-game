@@ -154,6 +154,12 @@ namespace MathGame.EditorTools
             var doorHeroRenderer = hero.AddComponent<SpriteRenderer>();
             doorHeroRenderer.sprite = GetPlaceholderSprite();
             doorHeroRenderer.color = new Color(0.3f, 0.6f, 1f);
+            // HeroView здесь не для ходьбы (герой в "Дверях" не двигается) —
+            // он нужен только за тем, что делает в Awake(): сообщает
+            // CameraFollowX, за кем следить. Без этого камера в сценах
+            // "Дверей" вообще не знала, куда смотреть, и застревала на
+            // стартовой позиции.
+            hero.AddComponent<HeroView>();
 
             var targetLabel = CreateWorldLabel(hero.transform, "HeroTargetLabel", 1f);
 

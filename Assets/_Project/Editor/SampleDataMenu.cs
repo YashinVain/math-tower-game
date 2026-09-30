@@ -24,7 +24,18 @@ namespace MathGame.EditorTools
         [MenuItem("MathGame/2. Bootstrap Sample Level Data")]
         public static void CreateSampleData()
         {
-            var theme = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Default.asset");
+            // Разные темы на разных уровнях — чтобы визуально было видно,
+            // что уровень 2 "мрачнее" уровня 1 (по ТЗ — постепенное
+            // нарастание сложности должно ощущаться и по картинке).
+            var theme1 = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Level1.asset");
+            theme1.ambientTint = new Color(0.75f, 0.85f, 0.95f);
+            theme1.darknessAmount = 0f;
+            EditorUtility.SetDirty(theme1);
+
+            var theme2 = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Level2.asset");
+            theme2.ambientTint = new Color(0.55f, 0.55f, 0.7f);
+            theme2.darknessAmount = 0.3f;
+            EditorUtility.SetDirty(theme2);
 
             var towerDef = LoadOrCreate<TowerMinigameDefinition>($"{MinigamesFolder}/TowerMinigame_01.asset");
             towerDef.towerSizes = new List<int> { 2, 3, 4 };
@@ -41,14 +52,14 @@ namespace MathGame.EditorTools
             var level1 = LoadOrCreate<LevelDefinition>($"{LevelsFolder}/Level_01_Towers.asset");
             level1.levelId = "level_01";
             level1.displayName = "Уровень 1";
-            level1.visualTheme = theme;
+            level1.visualTheme = theme1;
             level1.sequence = new List<MinigameDefinition> { towerDef };
             EditorUtility.SetDirty(level1);
 
             var level2 = LoadOrCreate<LevelDefinition>($"{LevelsFolder}/Level_02_Doors.asset");
             level2.levelId = "level_02";
             level2.displayName = "Уровень 2";
-            level2.visualTheme = theme;
+            level2.visualTheme = theme2;
             level2.sequence = new List<MinigameDefinition> { doorDef };
             EditorUtility.SetDirty(level2);
 
