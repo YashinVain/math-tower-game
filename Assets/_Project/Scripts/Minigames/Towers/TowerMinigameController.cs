@@ -20,16 +20,19 @@ namespace MathGame.Minigames.Towers
     // навсегда. В момент появления этажа ровно maxBeatableAtOnce големов
     // (по умолчанию 1) проходимы прямо сейчас; остальные — нет, но КАЖДЫЙ
     // из них гарантированно станет проходимым, если бить големов в
-    // правильном порядке (сначала те, что уже по силам). Раньше это
-    // гарантировалось требованием "цель каждого следующего голема выше
-    // суммы силы ВСЕХ предыдущих" — арифметически это заставляет силу
-    // героя расти взрывным образом (почти удваиваться на каждом этаже), и
-    // уже 4-этажная башня требовала нереалистично широкого диапазона чисел
-    // в настройках. Сейчас вместо этого все "пока не проходимые" цели
-    // ставятся ПЛОТНО сразу над текущей силой героя (сила+1, сила+2, ...) —
-    // после победы над первым проходимым големом сила героя обычно сразу
-    // перекрывает их все разом, а не поднимается на один шаг за раз. Это
-    // работает при любом размере башни без экспоненциального роста чисел.
+    // правильном порядке (сначала те, что уже по силам).
+    //
+    // Сила героя растёт на фиксированное definition.powerPerWin за каждую
+    // победу (не на "ответ примера" — тот остаётся просто тем, что нужно
+    // посчитать и сравнить со своей силой, а не тем, что добавляется к
+    // ней). Благодаря этому рост предсказуем и только в одну сторону, а
+    // "пока не проходимые" цели можно расставить заранее, без всякого
+    // экспоненциального роста чисел: i-я по счёту становится проходимой
+    // ровно после (requiredCount+i) побед — момент, который можно посчитать
+    // напрямую (сила героя + (requiredCount+i)×powerPerWin), а не подбирать
+    // методом "цель выше суммы всех предыдущих" (так было раньше — это
+    // заставляло силу героя расти взрывным образом, и уже 4-этажная башня
+    // требовала нереалистично широкого диапазона чисел в настройках).
     public class TowerMinigameController : MinigameController
     {
         [SerializeField] private HeroView hero;
@@ -61,7 +64,6 @@ namespace MathGame.Minigames.Towers
         private MinigameRuntimeContext _context;
         private int _heroPower;
         private int _towerIndex;
-        private int _difficultyMaxValue;
         private float _heroToTowerDistance;
         private float _towerOriginX;
         private readonly List<GolemView> _activeGolems = new List<GolemView>();
@@ -123,19 +125,6 @@ namespace MathGame.Minigames.Towers
             // умножался на towerIndex от уже сдвинутой позиции героя).
             float towerX = _towerOriginX + towerSpacing * towerIndex;
             var difficulty = _context.BuildDifficulty();
-            _difficultyMaxValue = difficulty.MaxValue;
-            // Потолок силы героя применяется именно ЗДЕСЬ, между башнями —
-            // не в WinAgainstGolem на каждой победе. Если бы сила героя
-            // подрезалась потолком ВНУТРИ башни, PickTargets мог посчитать
-            // "пока не проходимую" цель исходя из будущего роста силы,
-            // которого на самом деле не случится (WinAgainstGolem обрежет
-            // его раньше) — и такая цель рисковала бы никогда не стать по
-            // силам. Внутри одной башни сила героя растёт свободно (её всё
-            // равно не даёт выйти за диапазон maxRepresentable в
-            // PickTargets), а между башнями — придерживается потолком, чтобы
-            // не улетать бесконечно далеко от следующего диапазона чисел.
-            _heroPower = Mathf.Min(_heroPower, HeroPowerCap());
-            UpdateHeroLabel();
             var targets = PickTargets(size, difficulty);
 
             // targets.Count ВСЕГДА равен size — башня больше никогда не
@@ -164,24 +153,27 @@ namespace MathGame.Minigames.Towers
         // гарантировать, что они все разные и что каждый рано или поздно
         // станет проходимым. Сначала — ровно maxBeatableAtOnce (минимум 1)
         // "сразу проходимых" целей (≤ силы героя). Остальные — "пока не
-        // проходимые": каждая цель строго выше ТЕКУЩЕЙ силы героя (иначе
-        // это не было бы выбором с самого начала), но не выше того, что
-        // герой гарантированно наберёт, если будет побеждать големов по
-        // возрастанию их цели — этот "потолок" пересчитывается на каждом
-        // шаге и растёт вместе с уже распределёнными целями, поэтому почти
-        // всегда хватает буквально одной первой победы, чтобы разом
-        // открыть все остальные. Если для каких-то экстремальных настроек
-        // одной попытки не хватило — пробуем построить весь этаж заново (до
-        // 30 раз); и только в совсем крайнем случае берём максимум, какой
-        // есть, лишь бы не укоротить башню и не выйти за диапазон чисел.
+        // проходимые": i-й по счёту (считая от maxBeatableAtOnce-го)
+        // становится проходимым ровно после того, как побеждены все
+        // предыдущие — а поскольку каждая победа добавляет силе героя ровно
+        // definition.powerPerWin (фиксированное число, не "ответ примера" —
+        // см. WinAgainstGolem), это можно посчитать заранее и без всякого
+        // экспоненциального роста: i-я "пока не проходимая" цель лежит в
+        // (сила героя; сила героя + (requiredCount+i)×powerPerWin]. Если для
+        // каких-то экстремальных настроек одной попытки не хватило —
+        // пробуем построить весь этаж заново (до 30 раз) с новыми
+        // случайными числами; и только в совсем крайнем случае берём
+        // максимум, какой есть, лишь бы не укоротить башню и не выйти за
+        // диапазон чисел.
         private List<int> PickTargets(int towerSize, DifficultyContext difficulty)
         {
             int maxRepresentable = difficulty.MaxValue * 2; // максимум, который вообще можно показать суммой двух чисел из диапазона
             int requiredCount = Mathf.Clamp(_definition.maxBeatableAtOnce, 1, towerSize);
+            int powerPerWin = Mathf.Max(1, _definition.powerPerWin);
 
             for (int attempt = 0; attempt < 30; attempt++)
             {
-                var targets = TryBuildTower(towerSize, requiredCount, maxRepresentable, allowShortfall: false);
+                var targets = TryBuildTower(towerSize, requiredCount, powerPerWin, maxRepresentable, allowShortfall: false);
                 if (targets != null)
                 {
                     Shuffle(targets);
@@ -195,7 +187,7 @@ namespace MathGame.Minigames.Towers
             // ещё раз, разрешая взять максимум из доступного диапазона там,
             // где не хватило места (возможен редкий повтор числа), но
             // ЭТАЖ НЕ ТЕРЯЕМ и за диапазон не выходим.
-            var fallback = TryBuildTower(towerSize, requiredCount, maxRepresentable, allowShortfall: true);
+            var fallback = TryBuildTower(towerSize, requiredCount, powerPerWin, maxRepresentable, allowShortfall: true);
             Shuffle(fallback);
             return fallback;
         }
@@ -204,25 +196,24 @@ namespace MathGame.Minigames.Towers
         // для очередной "пока не проходимой" цели (и allowShortfall=false) —
         // тогда PickTargets просто попробует ещё раз с новыми случайными
         // числами, а не оставит этаж неполным.
-        private List<int> TryBuildTower(int towerSize, int requiredCount, int maxRepresentable, bool allowShortfall)
+        private List<int> TryBuildTower(int towerSize, int requiredCount, int powerPerWin, int maxRepresentable, bool allowShortfall)
         {
             var targets = new List<int>(towerSize);
             var usedTargets = new HashSet<int>();
 
-            int reachable = _heroPower;
             for (int i = 0; i < requiredCount; i++)
             {
                 int t = PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Min(Mathf.Max(0, _heroPower), maxRepresentable));
                 usedTargets.Add(t);
                 targets.Add(t);
-                reachable += t;
             }
 
             int notYetCount = towerSize - requiredCount;
             for (int i = 0; i < notYetCount; i++)
             {
+                int priorWins = requiredCount + i; // столько побед случится ДО этого голема, если бить по порядку возрастания
                 int lo = _heroPower + 1; // строго выше НАЧАЛЬНОЙ силы героя — иначе был бы проходим сразу, до всякого выбора
-                int hi = Mathf.Min(reachable, maxRepresentable);
+                int hi = Mathf.Min(_heroPower + priorWins * powerPerWin, maxRepresentable);
                 if (lo > hi)
                 {
                     if (!allowShortfall) return null;
@@ -232,7 +223,6 @@ namespace MathGame.Minigames.Towers
                 int t = PickDistinctTarget(usedTargets, lo, hi);
                 usedTargets.Add(t);
                 targets.Add(t);
-                reachable += t; // после победы над этим ответом сила героя вырастет ещё больше — окно для следующих целей расширяется
             }
 
             return targets;
@@ -273,17 +263,6 @@ namespace MathGame.Minigames.Towers
             return lo;
         }
 
-        // definition.powerCap, если его явно задали в настройках уровня,
-        // иначе — 1.5×MaxValue из текущего диапазона чисел. Без верхнего
-        // предела сила героя со временем перерастает то, что вообще можно
-        // выразить суммой двух чисел из диапазона — тогда пример неизбежно
-        // приходится показывать с числом за пределами настроек. 1.5×MaxValue
-        // держит силу героя заметно ниже 2×MaxValue — то есть у следующей
-        // башни всегда остаётся запас чисел выше стартовой силы героя для
-        // "пока не проходимых" целей (см. PickTargets).
-        private int HeroPowerCap() =>
-            _definition.powerCap > 0 ? _definition.powerCap : Mathf.RoundToInt(_difficultyMaxValue * 1.5f);
-
         private void OnGolemSelected(GolemView golem)
         {
             if (_inputLocked || !_activeGolems.Contains(golem)) return;
@@ -295,12 +274,18 @@ namespace MathGame.Minigames.Towers
 
         private void WinAgainstGolem(GolemView golem)
         {
-            // Без потолка здесь — он применяется только между башнями (см.
-            // SpawnTower), не после каждой отдельной победы. Иначе сила
-            // героя ВНУТРИ этой же башни могла бы обрезаться ниже того,
-            // что PickTargets уже заложил в "пока не проходимые" цели, и
-            // кто-то из големов так и не стал бы проходимым по-настоящему.
-            _heroPower += golem.Answer;
+            // Сила героя растёт на фиксированное powerPerWin за победу, а
+            // не на "ответ этого примера" — раньше было наоборот, и из-за
+            // этого число скакало непредсказуемо, а когда сверху ещё
+            // применялся потолок между башнями, сила героя могла даже
+            // ПАДАТЬ при переходе к следующей башне (игрок это заметил и
+            // попросил сделать рост только вверх и небольшими шагами).
+            // definition.powerCap, если задан (>0), останавливает рост —
+            // но никогда не опускает уже набранную силу ниже того, что
+            // было: Mathf.Max гарантирует это, даже если powerCap задан
+            // меньше текущей силы героя по ошибке в настройках уровня.
+            int next = _heroPower + _definition.powerPerWin;
+            _heroPower = _definition.powerCap > 0 ? Mathf.Max(_heroPower, Mathf.Min(next, _definition.powerCap)) : next;
             UpdateHeroLabel();
 
             hero.PlayVictoryPulse();
