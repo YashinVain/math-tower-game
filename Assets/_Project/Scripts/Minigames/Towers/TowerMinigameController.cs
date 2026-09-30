@@ -49,7 +49,6 @@ namespace MathGame.Minigames.Towers
         private float _heroToTowerDistance;
         private float _towerOriginX;
         private readonly List<GolemView> _activeGolems = new List<GolemView>();
-        private readonly HashSet<GolemView> _requiredGolems = new HashSet<GolemView>();
         private bool _inputLocked;
 
         public override void Begin(MinigameDefinition definition, MinigameRuntimeContext context)
@@ -97,7 +96,6 @@ namespace MathGame.Minigames.Towers
             foreach (var golem in _activeGolems)
                 if (golem != null) Destroy(golem.gameObject);
             _activeGolems.Clear();
-            _requiredGolems.Clear();
 
             int size = _definition.towerSizes[towerIndex];
             // _towerOriginX — X первой башни (уже посчитан в ConfigureCamera
@@ -110,8 +108,7 @@ namespace MathGame.Minigames.Towers
             float towerX = _towerOriginX + towerSpacing * towerIndex;
             var difficulty = _context.BuildDifficulty();
             _difficultyMaxValue = difficulty.MaxValue;
-            var beatableSlots = PickBeatableSlots(size);
-            var usedTargets = new HashSet<int>(); // чтобы в одной башне не было двух големов с одинаковым ответом (то есть и "1+2"/"2+1" тоже не встретятся — у них один и тот же ответ)
+            var targets = PickTargets(size, difficulty);
 
             for (int i = 0; i < size; i++)
             {
@@ -123,83 +120,96 @@ namespace MathGame.Minigames.Towers
                     golemSlotParent.position.y + baseHeight + i * floorHeight,
                     golemSlotParent.position.z);
 
-                bool isRequired = beatableSlots.Contains(i);
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);
-                var problem = GenerateProblemRelativeToPower(difficulty, beatable: isRequired, usedTargets);
-                usedTargets.Add(problem.Answer);
+                var problem = _context.ProblemGenerator.GenerateWithAnswer(difficulty, targets[i]);
                 golem.Init(problem, OnGolemSelected);
                 _activeGolems.Add(golem);
-                // "Непроходимые" големы задуманы как ловушка, которую нужно
-                // распознать и не трогать — а не как обязательная ступень.
-                // Обязательны для прохождения башни только "проходимые"
-                // (см. WinAgainstGolem): иначе тур становится непроходимым
-                // в принципе, ведь единственный способ "победить" ловушку —
-                // проиграть уровень.
-                if (isRequired) _requiredGolems.Add(golem);
             }
 
             Vector3 heroTarget = new Vector3(towerX - _heroToTowerDistance, hero.transform.position.y, hero.transform.position.z);
             hero.MoveTo(heroTarget, moveDuration, () => _inputLocked = false);
         }
 
-        // Выбирает, какие места в башне получат "проходимый" (по силе
-        // герою) пример — случайно, чтобы расположение не угадывалось
-        // заранее. Не больше definition.maxBeatableAtOnce штук сразу, но
-        // и не меньше одного — минимум 1 нижняя граница жёсткая: без хотя
-        // бы одного проходимого голема уровень становится непроходимым.
-        private HashSet<int> PickBeatableSlots(int towerSize)
+        // Строит ответы для всех големов этажа сразу, а не по одному — это
+        // важно: раньше "непроходимые" големы были непроходимыми НАВСЕГДА
+        // (их цель ставилась один раз и никогда не могла стать достижимой),
+        // а правило "нужно победить всех големов этажа" при этом никуда не
+        // делось — значит, единственным выходом для такого голема было
+        // кликнуть и проиграть. Игрок абсолютно справедливо назвал это
+        // "этаж скипается сам" (я убирал такого голема автоматически, чтобы
+        // хоть как-то не давать умереть) — но правильное решение другое:
+        // "непроходимый" должен быть непроходимым только ПОКА ТЫ ЕГО НЕ
+        // ЗАСЛУЖИЛ, а не навсегда. Сначала выбираем "первую волну" — ровно
+        // столько проходимых прямо сейчас примеров, сколько разрешает
+        // maxBeatableAtOnce (минимум 1). Складываем, насколько вырастет
+        // сила героя, если победить их все — это гарантированный потолок.
+        // "Вторая волна" (оставшиеся места) получает цель строго ВЫШЕ
+        // текущей силы героя (иначе это не было бы выбором), но не выше
+        // этого гарантированного потолка — то есть каждый голем на этаже
+        // рано или поздно станет проходимым, если бить их в правильном
+        // порядке. Кликать каждого голема обязательно — скипов больше нет.
+        private int[] PickTargets(int towerSize, DifficultyContext difficulty)
         {
+            var targets = new int[towerSize];
+            var usedTargets = new HashSet<int>(); // чтобы не было двух големов с одинаковым ответом на одном этаже (в том числе "зеркальных" вроде "1+2"/"2+1")
+
             int budget = Mathf.Clamp(_definition.maxBeatableAtOnce, 1, towerSize);
-            var slots = new HashSet<int>();
-            while (slots.Count < budget)
-                slots.Add(Random.Range(0, towerSize));
-            return slots;
-        }
+            var firstWaveSlots = new HashSet<int>();
+            while (firstWaveSlots.Count < budget)
+                firstWaveSlots.Add(Random.Range(0, towerSize));
 
-        // Раньше это было "подбором": генерировали обычный случайный пример
-        // и проверяли, подходит ли он по силе — если диапазон чисел в
-        // настройках был сильно меньше или сильно больше силы героя,
-        // подходящий пример мог вообще не встретиться за отведённые
-        // попытки, и после них возвращалось что получилось — то есть
-        // условие "проходимый"/"непроходимый" могло не выполниться совсем.
-        // Правильный способ — строить пример "от ответа" (как уже сделано
-        // для двери с верным ответом в DoorMinigameController): сначала
-        // сами решаем, каким должен быть ответ (обязательно ≤ силы героя,
-        // либо обязательно больше), а затем GenerateWithAnswer собирает
-        // под это число сам пример. Это гарантия, а не вероятность.
-        //
-        // target для "непроходимого" голема дополнительно зажат сверху в
-        // 2×MaxValue — это максимум, который в принципе можно показать
-        // суммой двух чисел из настроенного диапазона (см. также
-        // WinAgainstGolem — сила героя тоже не растёт выше MaxValue именно
-        // за тем, чтобы для "непроходимого" всегда оставался запас выше
-        // heroPower, но всё ещё в пределах 2×MaxValue).
-        //
-        // usedTargets — чтобы в одной башне не было двух големов с
-        // одинаковым ответом: иначе они могут визуально совпасть вплоть до
-        // "зеркальных" примеров вроде "1+2" и "2+1" (у обоих ответ 3).
-        private MathProblem GenerateProblemRelativeToPower(DifficultyContext difficulty, bool beatable, HashSet<int> usedTargets)
-        {
-            int target = 0;
-            for (int attempt = 0; attempt < 20; attempt++)
+            int cap = HeroPowerCap();
+            int guaranteedPowerAfterFirstWave = _heroPower;
+            foreach (int slot in firstWaveSlots)
             {
-                if (beatable)
-                {
-                    int upperBound = Mathf.Max(0, _heroPower);
-                    target = Random.Range(Mathf.Min(0, upperBound), upperBound + 1);
-                }
-                else
-                {
-                    int spread = Mathf.Max(1, difficulty.MaxValue - difficulty.MinValue + 1);
-                    int maxRepresentable = difficulty.MaxValue * 2;
-                    target = Mathf.Min(_heroPower + Random.Range(1, spread + 1), maxRepresentable);
-                }
-
-                if (!usedTargets.Contains(target)) break; // нашли ответ, которого ещё нет в этой башне
+                int t = PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Max(0, _heroPower));
+                targets[slot] = t;
+                usedTargets.Add(t);
+                guaranteedPowerAfterFirstWave = Mathf.Min(guaranteedPowerAfterFirstWave + t, cap);
             }
 
-            return _context.ProblemGenerator.GenerateWithAnswer(difficulty, target);
+            int maxRepresentable = difficulty.MaxValue * 2; // максимум, который вообще можно показать суммой двух чисел из диапазона
+            for (int i = 0; i < towerSize; i++)
+            {
+                if (firstWaveSlots.Contains(i)) continue;
+
+                int lo = _heroPower + 1;
+                int hi = Mathf.Min(guaranteedPowerAfterFirstWave, maxRepresentable);
+                int t = lo <= hi
+                    ? PickDistinctTarget(usedTargets, lo, hi)
+                    : PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Max(0, _heroPower)); // герой уже и так достаточно силён — пусть этот голем тоже будет сразу проходимым, диапазон важнее "сложности"
+
+                targets[i] = t;
+                usedTargets.Add(t);
+            }
+
+            return targets;
         }
+
+        private int PickDistinctTarget(HashSet<int> usedTargets, int lo, int hi)
+        {
+            int target = lo;
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                target = Random.Range(lo, hi + 1);
+                if (!usedTargets.Contains(target)) break; // нашли ответ, которого ещё нет на этом этаже
+            }
+            return target;
+        }
+
+        // definition.powerCap, если его явно задали в настройках уровня,
+        // иначе — 1.5×MaxValue из текущего диапазона чисел. Без верхнего
+        // предела сила героя со временем перерастает то, что вообще можно
+        // выразить суммой двух чисел из диапазона — тогда пример неизбежно
+        // приходится показывать с числом за пределами настроек (баг,
+        // который видел игрок: "11 + 6" при диапазоне 0..6). Ровно
+        // MaxValue в качестве предела тоже пробовали — хватало для защиты
+        // от бага, но герой почти сразу упирался в потолок и переставал
+        // расти вообще ("счётчик силы не добавляет цифры"). 1.5×MaxValue
+        // оставляет заметный рост силы и всё ещё держит запас выше потолка
+        // (вплоть до 2×MaxValue) для вторoй волны.
+        private int HeroPowerCap() =>
+            _definition.powerCap > 0 ? _definition.powerCap : Mathf.RoundToInt(_difficultyMaxValue * 1.5f);
 
         private void OnGolemSelected(GolemView golem)
         {
@@ -212,42 +222,16 @@ namespace MathGame.Minigames.Towers
 
         private void WinAgainstGolem(GolemView golem)
         {
-            _heroPower += golem.Answer;
-            // Предел силы героя: definition.powerCap, если его явно задали
-            // в настройках уровня, иначе — 1.5×MaxValue из текущего
-            // диапазона чисел. Без верхнего предела вообще сила героя со
-            // временем перерастает то, что вообще можно выразить суммой
-            // двух чисел из диапазона — и тогда "непроходимый" пример для
-            // голема неизбежно приходится показывать с числом за пределами
-            // настроек (баг, который видел игрок: "11 + 6" при диапазоне
-            // 0..6). Раньше предел стоял ровно в MaxValue — этого хватало
-            // для защиты от бага, но герой почти сразу после старта упирался
-            // в потолок и переставал расти вообще (другая жалоба игрока:
-            // "счётчик силы не добавляет цифры") — 1.5×MaxValue оставляет
-            // заметный рост силы и всё ещё держит запас выше потолка
-            // (вплоть до 2×MaxValue) для непроходимых примеров.
-            int cap = _definition.powerCap > 0 ? _definition.powerCap : Mathf.RoundToInt(_difficultyMaxValue * 1.5f);
-            _heroPower = Mathf.Min(_heroPower, cap);
+            _heroPower = Mathf.Min(_heroPower + golem.Answer, HeroPowerCap());
             UpdateHeroLabel();
 
             hero.PlayVictoryPulse();
-            _requiredGolems.Remove(golem);
             golem.PlayDefeatedByHero(() =>
             {
                 _activeGolems.Remove(golem);
                 _inputLocked = false;
 
-                if (_requiredGolems.Count > 0) return; // остались ещё обязательные ("проходимые") големы
-
-                // Все обязательные побеждены — башня пройдена. Оставшиеся
-                // "непроходимые" — это ловушки, которые игрок правильно
-                // обошёл: они больше не нужны, убираем сразу, а не
-                // оставляем стоять (и кликабельными!) пока герой идёт
-                // дальше — иначе случайный клик по ним убьёт героя уже
-                // ПОСЛЕ того, как башня по сути пройдена.
-                foreach (var leftover in _activeGolems)
-                    if (leftover != null) Destroy(leftover.gameObject);
-                _activeGolems.Clear();
+                if (_activeGolems.Count > 0) return; // на этаже остались ещё голема — PickTargets гарантирует, что все они рано или поздно станут проходимыми
 
                 if (_towerIndex + 1 < _definition.towerSizes.Count) SpawnTower(_towerIndex + 1);
                 else RaiseCompleted();

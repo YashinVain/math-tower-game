@@ -166,8 +166,20 @@ namespace MathGame.EditorTools
             SetFloatField(cameraFollow, "offsetX", 3f);
 
             var background = new GameObject("Background");
-            background.transform.position = new Vector3(-6f, -1f, 10f);
-            background.transform.localScale = new Vector3(40f, 20f, 1f);
+            // Раньше фон стоял на фиксированном месте в мире (-6,-1) — это
+            // работало, пока камера была маленькой и почти не двигалась.
+            // Теперь камера по X следует за героем на всю длину уровня, а
+            // по Y её высота (cameraOrthographicSize) разная у башен и
+            // дверей — при более широком обзора неподвижный фон переставал
+            // доставать до краёв экрана, и по бокам была видна "родная"
+            // синяя заливка камеры вместо картинки фона (ровно то, что
+            // увидел игрок). Сделал фон ребёнком камеры с большим запасом
+            // по размеру — теперь он всегда едет вместе с камерой и всегда
+            // перекрывает весь её обзор, при любом окне и любом типе
+            // мини-игры.
+            background.transform.SetParent(cameraGo.transform, false);
+            background.transform.localPosition = new Vector3(0f, 0f, 20f);
+            background.transform.localScale = new Vector3(80f, 40f, 1f);
             var bgRenderer = background.AddComponent<SpriteRenderer>();
             bgRenderer.sprite = GetPlaceholderSprite();
             bgRenderer.color = new Color(0.7f, 0.85f, 0.95f);

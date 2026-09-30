@@ -41,10 +41,10 @@ namespace MathGame.UI.Menu
         {
             numberMinSlider.onValueChanged.AddListener(_ => OnChanged());
             numberMaxSlider.onValueChanged.AddListener(_ => OnChanged());
-            additionToggle.onValueChanged.AddListener(_ => OnChanged());
-            subtractionToggle.onValueChanged.AddListener(_ => OnChanged());
-            multiplicationToggle.onValueChanged.AddListener(_ => OnChanged());
-            divisionToggle.onValueChanged.AddListener(_ => OnChanged());
+            additionToggle.onValueChanged.AddListener(_ => OnOperationToggleChanged(additionToggle));
+            subtractionToggle.onValueChanged.AddListener(_ => OnOperationToggleChanged(subtractionToggle));
+            multiplicationToggle.onValueChanged.AddListener(_ => OnOperationToggleChanged(multiplicationToggle));
+            divisionToggle.onValueChanged.AddListener(_ => OnOperationToggleChanged(divisionToggle));
             difficultyGrowthToggle.onValueChanged.AddListener(_ => OnChanged());
             difficultyGrowthRateSlider.onValueChanged.AddListener(_ => OnChanged());
             timeLimitSlider.onValueChanged.AddListener(_ => OnChanged());
@@ -75,6 +75,38 @@ namespace MathGame.UI.Menu
 
             RefreshLabels(settings);
             _isLoading = false;
+
+            // Защита на случай, если в сохранённом файле настроек как-то
+            // оказались выключены все четыре операции разом (например, из
+            // старой версии сохранения) — генератор примеров в этом случае
+            // молча подставляет сложение (см. PickOperation в
+            // MathProblemGenerator), и экран настроек должен показывать
+            // ровно то же самое, а не "ничего не выбрано".
+            if (!additionToggle.isOn && !subtractionToggle.isOn && !multiplicationToggle.isOn && !divisionToggle.isOn)
+            {
+                additionToggle.isOn = true; // через isOn, не SetIsOnWithoutNotify — чтобы OnOperationToggleChanged сохранил это в настройки
+            }
+        }
+
+        // Хотя бы одна операция должна остаться включённой — иначе
+        // генератор примеров молча подставляет сложение (см. PickOperation
+        // в MathProblemGenerator), и в настройках было бы видно "выключено
+        // всё", а в игре всё равно шли бы примеры на сложение — ровно
+        // такой рассинхрон между экраном и игрой заметил игрок. Поэтому
+        // последнюю оставшуюся галочку снять нельзя — она просто
+        // возвращается обратно.
+        private void OnOperationToggleChanged(Toggle changedToggle)
+        {
+            if (_isLoading) return;
+
+            bool anyEnabled = additionToggle.isOn || subtractionToggle.isOn || multiplicationToggle.isOn || divisionToggle.isOn;
+            if (!anyEnabled)
+            {
+                changedToggle.SetIsOnWithoutNotify(true); // без Notify — иначе получим повторный вызов этого же метода
+                return;
+            }
+
+            OnChanged();
         }
 
         private void OnChanged()

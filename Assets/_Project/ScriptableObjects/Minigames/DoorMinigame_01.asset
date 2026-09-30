@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: DoorMinigame_01
   m_EditorClassIdentifier: Assembly-CSharp::MathGame.Data.DoorMinigameDefinition
   minigameId: 
-  controllerPrefab: {fileID: 3388602728596108975, guid: 2ef14abe1f751544ab32a412bddc9635, type: 3}
+  controllerPrefab: {fileID: 2683818218526527078, guid: 2ef14abe1f751544ab32a412bddc9635, type: 3}
   doorsPerRound: 3
   correctDoorsRequired: 3
