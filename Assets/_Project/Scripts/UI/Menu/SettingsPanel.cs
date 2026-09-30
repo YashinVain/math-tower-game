@@ -35,6 +35,13 @@ namespace MathGame.UI.Menu
         [SerializeField] private Button resetConfirmYesButton;
         [SerializeField] private Button resetConfirmNoButton;
 
+        // Минимальная ширина диапазона чисел (макс. − мин.). Слишком узкий
+        // диапазон (например, "от 5 до 5") не даёт генератору достаточно
+        // разных чисел, чтобы построить несколько РАЗНЫХ примеров подряд —
+        // именно за счёт этого держится правило "не больше N правильных
+        // ответов сразу" в башнях (см. TowerMinigameController.PickTargets).
+        private const int MinNumberRangeWidth = 4;
+
         private bool _isLoading;
 
         private void Awake()
@@ -86,6 +93,11 @@ namespace MathGame.UI.Menu
             {
                 additionToggle.isOn = true; // через isOn, не SetIsOnWithoutNotify — чтобы OnOperationToggleChanged сохранил это в настройки
             }
+
+            // Та же защита для диапазона чисел — например, если сохранённый
+            // файл старый и в нём ещё нет такого ограничения.
+            if (settings.numberRangeMax - settings.numberRangeMin < MinNumberRangeWidth)
+                OnChanged(); // сам пересчитает и сохранит через ClampNumberRange
         }
 
         // Хотя бы одна операция должна остаться включённой — иначе
@@ -109,13 +121,31 @@ namespace MathGame.UI.Menu
             OnChanged();
         }
 
+        // Держит numberRangeMax как минимум на MinNumberRangeWidth больше
+        // numberRangeMin — всегда подтягивая "макс.", а не "мин." (у слайдера
+        // минимума потолок 20, у слайдера максимума потолок 50, так что
+        // места хватит с большим запасом). Так игрок не может зажать
+        // диапазон до одного-двух чисел ни подняв "мин.", ни опустив
+        // "макс.", а оба слайдера на экране всегда показывают то, что
+        // реально сохранено.
+        private void ClampNumberRange(out int min, out int max)
+        {
+            min = Mathf.RoundToInt(numberMinSlider.value);
+            max = Mathf.Max(Mathf.RoundToInt(numberMaxSlider.value), min + MinNumberRangeWidth);
+
+            numberMinSlider.SetValueWithoutNotify(min);
+            numberMaxSlider.SetValueWithoutNotify(max);
+        }
+
         private void OnChanged()
         {
             if (_isLoading) return;
 
+            ClampNumberRange(out int min, out int max);
+
             var settings = GameServices.Instance.Settings.Current;
-            settings.numberRangeMin = Mathf.RoundToInt(numberMinSlider.value);
-            settings.numberRangeMax = Mathf.Max(settings.numberRangeMin, Mathf.RoundToInt(numberMaxSlider.value));
+            settings.numberRangeMin = min;
+            settings.numberRangeMax = max;
             settings.additionEnabled = additionToggle.isOn;
             settings.subtractionEnabled = subtractionToggle.isOn;
             settings.multiplicationEnabled = multiplicationToggle.isOn;

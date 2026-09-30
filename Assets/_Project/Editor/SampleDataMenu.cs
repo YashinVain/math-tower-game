@@ -40,6 +40,10 @@ namespace MathGame.EditorTools
             var towerDef = LoadOrCreate<TowerMinigameDefinition>($"{MinigamesFolder}/TowerMinigame_01.asset");
             towerDef.towerSizes = new List<int> { 2, 3, 4 };
             towerDef.heroStartingPower = 5;
+            // Явно прописываем здесь, а не полагаемся на дефолт в классе:
+            // если ассет уже существует (LoadOrCreate его не пересоздаёт),
+            // старое сериализованное значение само по себе не обновится.
+            towerDef.maxBeatableAtOnce = 1;
             LinkControllerPrefab(towerDef, TowerMinigamePrefabPath);
             EditorUtility.SetDirty(towerDef);
 
