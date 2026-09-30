@@ -40,7 +40,10 @@ namespace MathGame.UI.Menu
         // разных чисел, чтобы построить несколько РАЗНЫХ примеров подряд —
         // именно за счёт этого держится правило "не больше N правильных
         // ответов сразу" в башнях (см. TowerMinigameController.PickTargets).
-        private const int MinNumberRangeWidth = 4;
+        // 6 — с запасом под самую большую башню (4 этажа, из них до 3
+        // "ловушек" сразу): им нужно поместиться в окно шириной примерно
+        // 0.5×MaxValue, и при MaxValue=6 это ровно 3 разных числа.
+        private const int MinNumberRangeWidth = 6;
 
         private bool _isLoading;
 
