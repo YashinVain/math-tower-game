@@ -110,7 +110,11 @@ namespace MathGame.Minigames.Towers
             _difficultyMaxValue = difficulty.MaxValue;
             var targets = PickTargets(size, difficulty);
 
-            for (int i = 0; i < size; i++)
+            // targets.Count может быть МЕНЬШЕ size (см. комментарий в
+            // PickTargets) — это осознанно: лучше более короткий этаж, чем
+            // пример, который так и обязан быть "сразу верным" только
+            // потому, что герою уже некуда расти внутри диапазона.
+            for (int i = 0; i < targets.Count; i++)
             {
                 // baseHeight поднимает нижний этаж над головой героя — иначе
                 // этаж 0 оказывается на одной высоте с героем, и подпись
@@ -130,71 +134,98 @@ namespace MathGame.Minigames.Towers
             hero.MoveTo(heroTarget, moveDuration, () => _inputLocked = false);
         }
 
-        // Строит ответы для всех големов этажа сразу, а не по одному — это
-        // важно: раньше "непроходимые" големы были непроходимыми НАВСЕГДА
-        // (их цель ставилась один раз и никогда не могла стать достижимой),
-        // а правило "нужно победить всех големов этажа" при этом никуда не
+        // Строит ответы для голем этажа сразу, а не по одному — это важно:
+        // раньше "непроходимые" големы были непроходимыми НАВСЕГДА (их цель
+        // ставилась один раз и никогда не могла стать достижимой), а
+        // правило "нужно победить всех големов этажа" при этом никуда не
         // делось — значит, единственным выходом для такого голема было
-        // кликнуть и проиграть. Игрок абсолютно справедливо назвал это
-        // "этаж скипается сам" (я убирал такого голема автоматически, чтобы
-        // хоть как-то не давать умереть) — но правильное решение другое:
-        // "непроходимый" должен быть непроходимым только ПОКА ТЫ ЕГО НЕ
-        // ЗАСЛУЖИЛ, а не навсегда. Сначала выбираем "первую волну" — ровно
-        // столько проходимых прямо сейчас примеров, сколько разрешает
-        // maxBeatableAtOnce (минимум 1). Складываем, насколько вырастет
-        // сила героя, если победить их все — это гарантированный потолок.
-        // "Вторая волна" (оставшиеся места) получает цель строго ВЫШЕ
-        // текущей силы героя (иначе это не было бы выбором), но не выше
-        // этого гарантированного потолка — то есть каждый голем на этаже
-        // рано или поздно станет проходимым, если бить их в правильном
-        // порядке. Кликать каждого голема обязательно — скипов больше нет.
-        private int[] PickTargets(int towerSize, DifficultyContext difficulty)
+        // кликнуть и проиграть, либо (в прошлой версии) он пропадал сам
+        // без клика — и то, и другое игрок справедливо назвал багом.
+        // Сначала выбираем "первую волну" — ровно столько проходимых прямо
+        // сейчас примеров, сколько разрешает maxBeatableAtOnce (минимум 1).
+        // Складываем, насколько ГАРАНТИРОВАННО вырастет сила героя, если
+        // победить их все (с учётом предела силы — см. HeroPowerCap) — это
+        // потолок для "второй волны". Каждому голему второй волны цель
+        // ставится строго ВЫШЕ текущей силы героя (иначе это не было бы
+        // выбором), но не выше этого гарантированного потолка — то есть он
+        // обязательно станет проходимым, если бить големов в правильном
+        // порядке.
+        //
+        // Важный нюанс: если герой уже вырос настолько, что "второй волне"
+        // в принципе некуда деться (например, его сила уже у самого
+        // предела, который допускает диапазон настроек) — эта башня просто
+        // получает МЕНЬШЕ големов, чем towerSize. Раньше в этом случае
+        // такой голем тихо превращался в "тоже сразу проходимый" — из-за
+        // этого на одном этаже одновременно оказывалось больше, чем
+        // maxBeatableAtOnce, правильных ответов (это и заметил игрок).
+        // Короче башня — это нормально, а вот "правильных ответов больше
+        // чем надо" — это как раз то, что запрещено с самого начала.
+        private List<int> PickTargets(int towerSize, DifficultyContext difficulty)
         {
-            var targets = new int[towerSize];
+            var targets = new List<int>(towerSize);
             var usedTargets = new HashSet<int>(); // чтобы не было двух големов с одинаковым ответом на одном этаже (в том числе "зеркальных" вроде "1+2"/"2+1")
 
             int budget = Mathf.Clamp(_definition.maxBeatableAtOnce, 1, towerSize);
-            var firstWaveSlots = new HashSet<int>();
-            while (firstWaveSlots.Count < budget)
-                firstWaveSlots.Add(Random.Range(0, towerSize));
-
             int cap = HeroPowerCap();
             int guaranteedPowerAfterFirstWave = _heroPower;
-            foreach (int slot in firstWaveSlots)
+
+            for (int i = 0; i < budget; i++)
             {
                 int t = PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Max(0, _heroPower));
-                targets[slot] = t;
+                targets.Add(t);
                 usedTargets.Add(t);
                 guaranteedPowerAfterFirstWave = Mathf.Min(guaranteedPowerAfterFirstWave + t, cap);
             }
 
             int maxRepresentable = difficulty.MaxValue * 2; // максимум, который вообще можно показать суммой двух чисел из диапазона
-            for (int i = 0; i < towerSize; i++)
+            int lo = _heroPower + 1;
+            int hi = Mathf.Min(guaranteedPowerAfterFirstWave, maxRepresentable);
+            int remainingSlots = towerSize - budget;
+            for (int i = 0; i < remainingSlots; i++)
             {
-                if (firstWaveSlots.Contains(i)) continue;
+                if (lo > hi) break; // герою больше некуда расти внутри диапазона — лучше более короткая башня, чем лишний "сразу верный" пример сверх лимита
 
-                int lo = _heroPower + 1;
-                int hi = Mathf.Min(guaranteedPowerAfterFirstWave, maxRepresentable);
-                int t = lo <= hi
-                    ? PickDistinctTarget(usedTargets, lo, hi)
-                    : PickDistinctTarget(usedTargets, Mathf.Min(0, _heroPower), Mathf.Max(0, _heroPower)); // герой уже и так достаточно силён — пусть этот голем тоже будет сразу проходимым, диапазон важнее "сложности"
-
-                targets[i] = t;
+                int t = PickDistinctTarget(usedTargets, lo, hi);
+                targets.Add(t);
                 usedTargets.Add(t);
             }
 
+            Shuffle(targets); // иначе лёгкие примеры всегда оказывались бы на нижних этажах, а сложные — на верхних
             return targets;
+        }
+
+        private static void Shuffle(List<int> list)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
         }
 
         private int PickDistinctTarget(HashSet<int> usedTargets, int lo, int hi)
         {
-            int target = lo;
             for (int attempt = 0; attempt < 20; attempt++)
             {
-                target = Random.Range(lo, hi + 1);
-                if (!usedTargets.Contains(target)) break; // нашли ответ, которого ещё нет на этом этаже
+                int candidate = Random.Range(lo, hi + 1);
+                if (!usedTargets.Contains(candidate)) return candidate;
             }
-            return target;
+
+            // 20 случайных попыток не нашли свободное число — ищем
+            // перебором, а не сдаёмся сразу. Без этого шага при небольшом
+            // диапазоне (мало вариантов чисел, а големов несколько) шанс
+            // на случайное совпадение двух примеров (например, "2+2"
+            // дважды на одном этаже — баг, который заметил игрок) был выше,
+            // чем должен быть: 20 попыток почти всегда достаточно, но не
+            // гарантированно.
+            for (int candidate = lo; candidate <= hi; candidate++)
+                if (!usedTargets.Contains(candidate)) return candidate;
+
+            // Буквально все числа в [lo, hi] уже заняты другими примерами
+            // этого же этажа — диапазон настроек слишком маленький для
+            // стольких разных чисел сразу. Совпадение в этом редком случае
+            // неизбежно (лучше показать повтор, чем пример вне диапазона).
+            return lo;
         }
 
         // definition.powerCap, если его явно задали в настройках уровня,
