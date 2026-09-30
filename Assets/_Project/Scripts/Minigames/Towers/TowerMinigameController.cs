@@ -19,11 +19,13 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private GolemView golemPrefab;
         [SerializeField] private Transform golemSlotParent;
         [SerializeField] private TextMeshPro heroPowerLabel;
-        [SerializeField] private float floorHeight = 1.2f;
+        [SerializeField] private float floorHeight = 1.6f;
         [SerializeField] private float baseHeight = 1.5f;
         [SerializeField] private float towerSpacing = 5f;
-        [SerializeField] private float approachOffset = 1.5f;
+        [SerializeField] private float approachOffset = 2.2f;
         [SerializeField] private float moveDuration = 0.6f;
+        [SerializeField] private float cameraOrthographicSize = 4.1f;
+        [SerializeField] private float cameraY = 2.3f;
 
         private TowerMinigameDefinition _definition;
         private MinigameRuntimeContext _context;
@@ -38,7 +40,22 @@ namespace MathGame.Minigames.Towers
             _context = context;
             _heroPower = _definition.heroStartingPower;
             UpdateHeroLabel();
+            ConfigureCamera();
             SpawnTower(0);
+        }
+
+        // Башни растут вверх, двери — в стороны: одной общей настройки
+        // камеры на оба типа мини-игр не хватает (проверено на практике).
+        // Каждый тип сам настраивает высоту обзора и то, на какой Y
+        // смотреть, при своём запуске — сравните с DoorMinigameController.
+        private void ConfigureCamera()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            cam.orthographicSize = cameraOrthographicSize;
+            var pos = cam.transform.position;
+            pos.y = cameraY;
+            cam.transform.position = pos;
         }
 
         private void SpawnTower(int towerIndex)

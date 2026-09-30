@@ -17,6 +17,8 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private DoorView doorPrefab;
         [SerializeField] private Transform doorsParent;
         [SerializeField] private float doorSpacing = 1.8f;
+        [SerializeField] private float cameraOrthographicSize = 3.6f;
+        [SerializeField] private float cameraY = -0.5f;
 
         private DoorMinigameDefinition _definition;
         private MinigameRuntimeContext _context;
@@ -30,7 +32,20 @@ namespace MathGame.Minigames.Doors
             _definition = (DoorMinigameDefinition)definition;
             _context = context;
             _correctDoorsPassed = 0;
+            ConfigureCamera();
             SpawnRound();
+        }
+
+        // Двери разложены в ряд по горизонтали (не вверх, как башни) — им
+        // нужен свой обзор камеры, отдельный от TowerMinigameController.
+        private void ConfigureCamera()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            cam.orthographicSize = cameraOrthographicSize;
+            var pos = cam.transform.position;
+            pos.y = cameraY;
+            cam.transform.position = pos;
         }
 
         private void SpawnRound()

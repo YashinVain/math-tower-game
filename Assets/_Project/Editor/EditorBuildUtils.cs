@@ -19,6 +19,9 @@ namespace MathGame.EditorTools
     // экране по построению, независимо от размера окна.
     public static class EditorBuildUtils
     {
+        // Для ссылочных полей (объекты, компоненты, префабы). Для чисел —
+        // SetFloatField ниже: objectReferenceValue работает только со
+        // ссылками, для float/int нужно отдельное свойство SerializedProperty.
         public static void SetField(Object target, string fieldName, Object value)
         {
             var so = new SerializedObject(target);
@@ -29,6 +32,19 @@ namespace MathGame.EditorTools
                 return;
             }
             prop.objectReferenceValue = value;
+            so.ApplyModifiedProperties();
+        }
+
+        public static void SetFloatField(Object target, string fieldName, float value)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(fieldName);
+            if (prop == null)
+            {
+                Debug.LogError($"Поле '{fieldName}' не найдено на {target.GetType().Name} — проверьте, не переименовалось ли оно в скрипте.");
+                return;
+            }
+            prop.floatValue = value;
             so.ApplyModifiedProperties();
         }
 

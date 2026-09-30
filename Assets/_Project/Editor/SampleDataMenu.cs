@@ -44,7 +44,7 @@ namespace MathGame.EditorTools
             EditorUtility.SetDirty(towerDef);
 
             var doorDef = LoadOrCreate<DoorMinigameDefinition>($"{MinigamesFolder}/DoorMinigame_01.asset");
-            doorDef.doorsPerRound = 4;
+            doorDef.doorsPerRound = 3;
             doorDef.correctDoorsRequired = 3;
             LinkControllerPrefab(doorDef, DoorMinigamePrefabPath);
             EditorUtility.SetDirty(doorDef);

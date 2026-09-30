@@ -16,6 +16,6 @@ MonoBehaviour:
   displayName: "\u0423\u0440\u043E\u0432\u0435\u043D\u044C 1"
   sequence:
   - {fileID: 11400000, guid: 38c416e9cae9c234caeecb00300bf297, type: 2}
-  visualTheme: {fileID: 11400000, guid: c3a844244a79cf64f8ffe24f6f576873, type: 2}
+  visualTheme: {fileID: 11400000, guid: afcd6d2360d4ecd4191fa94c5fbac9c0, type: 2}
   overrideTimeLimit: 0
   timeLimitSecondsOverride: 90

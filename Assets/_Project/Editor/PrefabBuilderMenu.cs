@@ -70,7 +70,7 @@ namespace MathGame.EditorTools
             golem.AddComponent<BoxCollider2D>();
             var golemView = golem.AddComponent<GolemView>();
 
-            var label = CreateWorldLabel(golem.transform, "ExpressionLabel", 1f);
+            var label = CreateWorldLabel(golem.transform, "ExpressionLabel", 0.75f);
             SetField(golemView, "expressionLabel", label);
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(golem, path);
@@ -98,7 +98,7 @@ namespace MathGame.EditorTools
             heroRenderer.color = new Color(0.3f, 0.6f, 1f);
             var heroView = hero.AddComponent<HeroView>();
 
-            var powerLabel = CreateWorldLabel(hero.transform, "PowerLabel", 1f);
+            var powerLabel = CreateWorldLabel(hero.transform, "PowerLabel", 0.75f);
 
             var golemSlots = new GameObject("GolemSlots");
             golemSlots.transform.SetParent(root.transform, false);
@@ -128,7 +128,7 @@ namespace MathGame.EditorTools
             door.AddComponent<BoxCollider2D>();
             var doorView = door.AddComponent<DoorView>();
 
-            var label = CreateWorldLabel(door.transform, "ExpressionLabel", 1f);
+            var label = CreateWorldLabel(door.transform, "ExpressionLabel", 0.75f);
             SetField(doorView, "expressionLabel", label);
             SetField(doorView, "doorRenderer", renderer);
 
@@ -161,13 +161,14 @@ namespace MathGame.EditorTools
             // стартовой позиции.
             hero.AddComponent<HeroView>();
 
-            var targetLabel = CreateWorldLabel(hero.transform, "HeroTargetLabel", 1f);
+            var targetLabel = CreateWorldLabel(hero.transform, "HeroTargetLabel", 0.75f);
 
             var doors = new GameObject("Doors");
             doors.transform.SetParent(root.transform, false);
-            // Достаточно далеко от героя, чтобы даже крайняя дверь (при
-            // 4 дверях с текущим doorSpacing) не наезжала на него.
-            doors.transform.localPosition = new Vector3(5f, 0f, 0f);
+            // Достаточно далеко от героя, чтобы даже крайняя дверь не
+            // наезжала на него, но не настолько далеко, чтобы самая
+            // правая дверь уезжала за край экрана у камеры.
+            doors.transform.localPosition = new Vector3(4.5f, 0f, 0f);
 
             SetField(controller, "heroTargetLabel", targetLabel);
             SetField(controller, "doorPrefab", doorPrefab.GetComponent<DoorView>());
@@ -223,11 +224,14 @@ namespace MathGame.EditorTools
             Object.DestroyImmediate(buttonGo);
         }
 
-        // fontSize здесь — мировые единицы, не пиксели. 4 (было изначально)
-        // давало буквы в несколько юнитов высотой — при этажах высотой
-        // 1.2 юнита соседние примеры наезжали друг на друга ("склеенные"
-        // цифры). 0.5 (промежуточная правка) оказался, наоборот, еле виден
-        // при текущем зуме камеры. 1.0 — компромисс между этими двумя.
+        // fontSize — мировые единицы, не пиксели (прошли путь 4 → 0.5 →
+        // 1.0, теперь 1.3 — крупнее по просьбе, всё ещё без наездов).
+        // yOffset тоже подбирался отдельно: раньше подпись одного этажа
+        // (yOffset=1 над телом) оказывалась почти вплотную к телу
+        // СЛЕДУЮЩЕГО этажа (при floorHeight=1.2 зазор был всего 0.2) —
+        // визуально казалось, что подпись "улетела"/принадлежит не тому
+        // голему. 0.75 плюс увеличенный floorHeight (см.
+        // TowerMinigameController) дают однозначный зазор.
         private static TextMeshPro CreateWorldLabel(Transform parent, string name, float yOffset)
         {
             var go = new GameObject(name);
@@ -235,7 +239,7 @@ namespace MathGame.EditorTools
             go.transform.localPosition = new Vector3(0f, yOffset, 0f);
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 1.0f;
+            tmp.fontSize = 1.3f;
             tmp.text = "0";
             return tmp;
         }
