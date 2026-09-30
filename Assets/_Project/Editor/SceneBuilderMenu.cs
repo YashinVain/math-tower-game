@@ -155,9 +155,9 @@ namespace MathGame.EditorTools
             // Controller / DoorMinigameController) сам подгонит
             // orthographicSize и Y под свой тип раскладки (башня растёт
             // вверх, двери — в стороны, общих значений на оба не хватает).
-            camera.orthographicSize = 4.8f;
+            camera.orthographicSize = 5.7f;
             camera.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
-            cameraGo.transform.position = new Vector3(-6f, 3f, -10f);
+            cameraGo.transform.position = new Vector3(-6f, 4.3f, -10f);
             cameraGo.tag = "MainCamera";
             cameraGo.AddComponent<AudioListener>();
             var cameraFollow = cameraGo.AddComponent<CameraFollowX>();
@@ -317,26 +317,35 @@ namespace MathGame.EditorTools
         private static GameObject BuildHud(Transform canvasTransform)
         {
             var hud = CreateUIObject("HUD", canvasTransform);
-            AnchorAt(hud, 0.5f, 1f, 320, 120, 0f, -70f);
+            AnchorAt(hud, 0.5f, 1f, 360, 140, 0f, -75f);
 
-            // Тёмная полупрозрachная подложка под весь HUD — без неё белый
+            // Тёмная полупрозрачная подложка под весь HUD — без неё белый
             // текст таймера терялся на светлом фоне уровня (он же меняется
             // по темам, так что полагаться на "фон всегда тёмный" нельзя).
             var hudBg = hud.gameObject.AddComponent<Image>();
             hudBg.color = new Color(0f, 0f, 0f, 0.45f);
 
-            var timerLabel = CreateLabel(hud, "TimerLabel", "01:30", 40, Color.white, 260, 60, TextAlignmentOptions.Center);
+            // Шрифт был 40 — увеличен и сделан жирным на случай, если дело
+            // было не только в контрасте, но и в том, что текст было просто
+            // тяжело разглядеть на таком размере.
+            var timerLabel = CreateLabel(hud, "TimerLabel", "01:30", 56, Color.white, 300, 80, TextAlignmentOptions.Center);
+            timerLabel.fontStyle = FontStyles.Bold;
             timerLabel.rectTransform.anchorMin = new Vector2(0.5f, 1f);
             timerLabel.rectTransform.anchorMax = new Vector2(0.5f, 1f);
             timerLabel.rectTransform.pivot = new Vector2(0.5f, 1f);
             timerLabel.rectTransform.anchoredPosition = Vector2.zero;
+            // На всякий случай явно ставим label последним по порядку среди
+            // детей HUD — в Unity UI то, что позже в списке, рисуется
+            // поверх того, что раньше, так что это гарантирует, что текст
+            // не может оказаться нарисован "под" чем-то ещё.
+            timerLabel.transform.SetAsLastSibling();
 
             var fillBarRect = CreateUIObject("TimerFillBar", hud);
             fillBarRect.anchorMin = new Vector2(0.5f, 1f);
             fillBarRect.anchorMax = new Vector2(0.5f, 1f);
             fillBarRect.pivot = new Vector2(0.5f, 1f);
-            fillBarRect.anchoredPosition = new Vector2(0f, -65f);
-            fillBarRect.sizeDelta = new Vector2(280, 18);
+            fillBarRect.anchoredPosition = new Vector2(0f, -85f);
+            fillBarRect.sizeDelta = new Vector2(320, 20);
             var fillImage = fillBarRect.gameObject.AddComponent<Image>();
             fillImage.color = new Color(0.3f, 0.8f, 0.4f);
             fillImage.type = Image.Type.Filled;

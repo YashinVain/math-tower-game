@@ -26,6 +26,13 @@ namespace MathGame.EditorTools
         private const string DoorsFolder = "Assets/_Project/Prefabs/Minigames/Doors";
         private const string UIFolder = "Assets/_Project/Prefabs/UI";
 
+        // См. комментарий у BuildGolemPrefab: во сколько раз герой/голем в
+        // башнях крупнее своего "базового" мирового размера — подобрано
+        // так, чтобы компенсировать более широкий обзор камеры башен
+        // (cameraOrthographicSize в TowerMinigameController) и выглядеть
+        // почти так же крупно, как герой/двери в мини-игре "Двери".
+        private const float HeroTowerGolemScale = 1.35f;
+
         [MenuItem("MathGame/1. Build Prefabs")]
         public static void BuildPrefabs()
         {
@@ -64,6 +71,16 @@ namespace MathGame.EditorTools
             }
 
             var golem = new GameObject("Golem");
+            // Башням нужен более широкий обзор камеры, чтобы поместились
+            // несколько этажей друг над другом (см. cameraOrthographicSize
+            // в TowerMinigameController) — а более широкий обзор при той же
+            // величине спрайта сам по себе делает его МЕЛЬЧЕ на экране.
+            // HeroTowerGolemScale компенсирует это, увеличивая сам спрайт в
+            // мировых единицах, чтобы голем/герой в башнях выглядели
+            // настолько же крупно, насколько герой/двери в "Дверях" (полностью
+            // сравнять размеры при этом нельзя — 4 этажа физически не
+            // поместятся в такой же узкий обзор, как у одиночного ряда дверей).
+            golem.transform.localScale = new Vector3(HeroTowerGolemScale, HeroTowerGolemScale, 1f);
             var golemRenderer = golem.AddComponent<SpriteRenderer>();
             golemRenderer.sprite = GetPlaceholderSprite();
             golemRenderer.color = new Color(0.45f, 0.2f, 0.55f);
@@ -93,6 +110,7 @@ namespace MathGame.EditorTools
             var hero = new GameObject("Hero");
             hero.transform.SetParent(root.transform, false);
             hero.transform.localPosition = new Vector3(-2f, 0f, 0f);
+            hero.transform.localScale = new Vector3(HeroTowerGolemScale, HeroTowerGolemScale, 1f);
             var heroRenderer = hero.AddComponent<SpriteRenderer>();
             heroRenderer.sprite = GetPlaceholderSprite();
             heroRenderer.color = new Color(0.3f, 0.6f, 1f);
@@ -241,7 +259,7 @@ namespace MathGame.EditorTools
             go.transform.localPosition = new Vector3(0f, yOffset, 0f);
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 1.3f;
+            tmp.fontSize = 1.5f; // крупнее прежних 1.3 — числа и примеры должны хорошо читаться
             tmp.text = "0";
             return tmp;
         }

@@ -20,12 +20,12 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private GolemView golemPrefab;
         [SerializeField] private Transform golemSlotParent;
         [SerializeField] private TextMeshPro heroPowerLabel;
-        [SerializeField] private float floorHeight = 1.6f;
-        [SerializeField] private float baseHeight = 1.5f;
+        [SerializeField] private float floorHeight = 2.2f;
+        [SerializeField] private float baseHeight = 1f;
         [SerializeField] private float towerSpacing = 5f;
         [SerializeField] private float moveDuration = 0.6f;
-        [SerializeField] private float cameraOrthographicSize = 4.8f;
-        [SerializeField] private float cameraY = 3f;
+        [SerializeField] private float cameraOrthographicSize = 5.7f;
+        [SerializeField] private float cameraY = 4.3f;
         // Доли ширины экрана от левого края (0..1) — не мировые единицы.
         // Герой ближе к левому краю, башня — правее центра. Пересчитываются
         // в мировые единицы в ConfigureCamera() под реальный aspect камеры,
@@ -37,6 +37,7 @@ namespace MathGame.Minigames.Towers
         private MinigameRuntimeContext _context;
         private int _heroPower;
         private int _towerIndex;
+        private int _difficultyMaxValue;
         private float _heroToTowerDistance;
         private float _towerOriginX;
         private readonly List<GolemView> _activeGolems = new List<GolemView>();
@@ -98,7 +99,9 @@ namespace MathGame.Minigames.Towers
             // умножался на towerIndex от уже сдвинутой позиции героя).
             float towerX = _towerOriginX + towerSpacing * towerIndex;
             var difficulty = _context.BuildDifficulty();
+            _difficultyMaxValue = difficulty.MaxValue;
             var beatableSlots = PickBeatableSlots(size);
+            var usedTargets = new HashSet<int>(); // чтобы в одной башне не было двух големов с одинаковым ответом (то есть и "1+2"/"2+1" тоже не встретятся — у них один и тот же ответ)
 
             for (int i = 0; i < size; i++)
             {
@@ -112,8 +115,9 @@ namespace MathGame.Minigames.Towers
 
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);
                 var problem = beatableSlots.Contains(i)
-                    ? GenerateProblemRelativeToPower(difficulty, beatable: true)
-                    : GenerateProblemRelativeToPower(difficulty, beatable: false);
+                    ? GenerateProblemRelativeToPower(difficulty, beatable: true, usedTargets)
+                    : GenerateProblemRelativeToPower(difficulty, beatable: false, usedTargets);
+                usedTargets.Add(problem.Answer);
                 golem.Init(problem, OnGolemSelected);
                 _activeGolems.Add(golem);
             }
@@ -147,18 +151,35 @@ namespace MathGame.Minigames.Towers
         // сами решаем, каким должен быть ответ (обязательно ≤ силы героя,
         // либо обязательно больше), а затем GenerateWithAnswer собирает
         // под это число сам пример. Это гарантия, а не вероятность.
-        private MathProblem GenerateProblemRelativeToPower(DifficultyContext difficulty, bool beatable)
+        //
+        // target для "непроходимого" голема дополнительно зажат сверху в
+        // 2×MaxValue — это максимум, который в принципе можно показать
+        // суммой двух чисел из настроенного диапазона (см. также
+        // WinAgainstGolem — сила героя тоже не растёт выше MaxValue именно
+        // за тем, чтобы для "непроходимого" всегда оставался запас выше
+        // heroPower, но всё ещё в пределах 2×MaxValue).
+        //
+        // usedTargets — чтобы в одной башне не было двух големов с
+        // одинаковым ответом: иначе они могут визуально совпасть вплоть до
+        // "зеркальных" примеров вроде "1+2" и "2+1" (у обоих ответ 3).
+        private MathProblem GenerateProblemRelativeToPower(DifficultyContext difficulty, bool beatable, HashSet<int> usedTargets)
         {
-            int target;
-            if (beatable)
+            int target = 0;
+            for (int attempt = 0; attempt < 20; attempt++)
             {
-                int upperBound = Mathf.Max(0, _heroPower);
-                target = Random.Range(Mathf.Min(0, upperBound), upperBound + 1);
-            }
-            else
-            {
-                int spread = Mathf.Max(1, difficulty.MaxValue - difficulty.MinValue + 1);
-                target = _heroPower + Random.Range(1, spread + 1);
+                if (beatable)
+                {
+                    int upperBound = Mathf.Max(0, _heroPower);
+                    target = Random.Range(Mathf.Min(0, upperBound), upperBound + 1);
+                }
+                else
+                {
+                    int spread = Mathf.Max(1, difficulty.MaxValue - difficulty.MinValue + 1);
+                    int maxRepresentable = difficulty.MaxValue * 2;
+                    target = Mathf.Min(_heroPower + Random.Range(1, spread + 1), maxRepresentable);
+                }
+
+                if (!usedTargets.Contains(target)) break; // нашли ответ, которого ещё нет в этой башне
             }
 
             return _context.ProblemGenerator.GenerateWithAnswer(difficulty, target);
@@ -176,7 +197,17 @@ namespace MathGame.Minigames.Towers
         private void WinAgainstGolem(GolemView golem)
         {
             _heroPower += golem.Answer;
-            if (_definition.powerCap > 0) _heroPower = Mathf.Min(_heroPower, _definition.powerCap);
+            // Предел силы героя: definition.powerCap, если его явно задали
+            // в настройках уровня, иначе — MaxValue из текущего диапазона
+            // чисел. Без этого сила героя со временем перерастает то, что
+            // вообще можно выразить суммой двух чисел из диапазона — и
+            // тогда "непроходимый" пример для голема неизбежно приходится
+            // показывать с числом за пределами настроек (баг, который
+            // видел игрок: "11 + 6" при диапазоне 0..6). Держа силу героя
+            // не выше MaxValue, всегда остаётся запас чисел ВЫШЕ его силы,
+            // но всё ещё внутри 2×MaxValue — как раз для непроходимых.
+            int cap = _definition.powerCap > 0 ? _definition.powerCap : _difficultyMaxValue;
+            _heroPower = Mathf.Min(_heroPower, cap);
             UpdateHeroLabel();
 
             hero.PlayVictoryPulse();

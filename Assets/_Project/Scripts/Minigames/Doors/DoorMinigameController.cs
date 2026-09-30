@@ -20,7 +20,13 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private Transform doorsParent;
         [SerializeField] private float doorSpacing = 1.8f;
         [SerializeField] private float cameraOrthographicSize = 3.6f;
-        [SerializeField] private float cameraY = -0.5f;
+        // Раньше было -0.5 (герой почти по центру экрана) — из-за этого
+        // "Двери" и "Башни" визуально стояли по-разному: в башнях герой
+        // стоит у самого низа экрана ("на полу"), в дверях — почти
+        // посередине. Camera Y пересчитан так, чтобы герой оказался на той
+        // же ДОЛЕ высоты экрана от низа, что и в TowerMinigameController
+        // (~12%) — то есть тоже "на полу", а не парил в воздухе.
+        [SerializeField] private float cameraY = 2.7f;
         // Доли ширины экрана от левого края (0..1) — см. TowerMinigameController
         // и ScreenLayout: тот же приём, что и у башен, только здесь двигаем
         // не героя (он тут не ходит), а doorsParent под героя.
