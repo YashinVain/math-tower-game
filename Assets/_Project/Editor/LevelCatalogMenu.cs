@@ -11,15 +11,13 @@ namespace MathGame.EditorTools
     // нечётные (1,3,5,7,9) — "Башни", чётные (2,4,6,8,10) — "Двери", как и
     // было задано в самом начале работы.
     //
-    // Сложность внутри каждого типа мини-игры растёт от уровня к уровню:
-    // у башен — больше самих башен подряд на уровне (высота одной башни
-    // ограничена 4 этажами и дальше не растёт, по просьбе игрока); у
-    // дверей — больше раундов подряд нужно пройти правильно (doorsPerRound
-    // специально НЕ растёт — 3 двери это предел, при котором всё ещё
-    // гарантированно помещается на экран при любой форме окна, см.
-    // ScreenLayout). Диапазон чисел отдельно растёт сам — за это отвечают
-    // настройки игрока (difficultyGrowthRate) и DifficultyScaler, эта же
-    // утилита их не трогает.
+    // Сложность растёт только у дверей от уровня к уровню (больше раундов
+    // подряд нужно пройти правильно). У башен прогрессию специально убрали
+    // по просьбе игрока — на всех 5 уровнях-башнях одна и та же
+    // последовательность 2→3→4, без повторов размера внутри уровня.
+    // Диапазон чисел у обоих типов растёт сам — за это отвечают настройки
+    // игрока (difficultyGrowthRate) и DifficultyScaler, эта утилита их не
+    // трогает.
     //
     // controllerPrefab у мини-игр всё равно нужно назначить вручную после
     // того, как собраны префабы TowerMinigame/DoorMinigame — этого код
@@ -38,29 +36,21 @@ namespace MathGame.EditorTools
 
         private const int LevelCount = 10;
 
-        // Размеры башен для каждого из 5 уровней-башен по порядку (уровни
-        // 1, 3, 5, 7, 9). Высота одной башни ограничена 4 этажами — больше
-        // не делаем ни на одном уровне (по просьбе игрока). Сложность
-        // дальше растёт не "выше", а "больше и чаще": с каждым следующим
-        // уровнем-башней самих башен подряд становится больше, и всё
-        // больше из них — сразу максимального размера. heroStartingPower и
-        // maxBeatableAtOnce/powerPerWin одинаковы на всех уровнях — это
-        // настройки "формата игры", а не "сложности", их трогать не нужно
-        // (см. TowerMinigameDefinition — там же объяснено, почему именно
-        // такие значения).
-        private static readonly List<int>[] TowerProgression =
-        {
-            new List<int> { 2, 3, 4 },             // уровень 1 — 3 башни
-            new List<int> { 2, 3, 4, 4 },          // уровень 3 — 4 башни
-            new List<int> { 3, 4, 4, 4 },          // уровень 5 — 4 башни, почти все максимальные
-            new List<int> { 3, 4, 4, 4, 4 },       // уровень 7 — 5 башен
-            new List<int> { 4, 4, 4, 4, 4 },       // уровень 9 — 5 башен, все максимальные
-        };
+        // Одна и та же последовательность башен на всех 5 уровнях-башнях
+        // (1, 3, 5, 7, 9) — 2→3→4 этажа, без прогрессии и без повторов
+        // внутри уровня (было {3,4,4,4} и похожее — игрок справедливо не
+        // хочет видеть один и тот же размер башни дважды подряд на одном
+        // уровне). heroStartingPower/maxBeatableAtOnce/powerPerWin тоже
+        // одинаковы везде — это настройки "формата игры", а не
+        // "сложности" (см. TowerMinigameDefinition, там же объяснено,
+        // почему именно такие значения).
+        private static readonly List<int> TowerSizes = new List<int> { 2, 3, 4 };
 
-        // Сколько раундов подряд нужно пройти правильно на каждом из 5
-        // уровней-дверей (уровни 2,4,6,8,10). doorsPerRound везде = 3 —
-        // это НЕ показатель сложности, а предел, при котором двери
-        // гарантированно помещаются на экране (см. DoorMinigameController).
+        // Сколько дверей показывать в раунде на КАЖДОМ уровне-двери — 4
+        // (было 3). Сколько раундов подряд нужно пройти правильно — растёт
+        // от уровня к уровню (уровни 2,4,6,8,10): это единственная
+        // прогрессия сложности, которую оставили у дверей.
+        private const int DoorsPerRound = 4;
         private static readonly int[] DoorRequiredProgression = { 3, 4, 5, 6, 8 };
 
         [MenuItem("MathGame/2. Build Level Catalog (10 Levels)")]
@@ -137,7 +127,7 @@ namespace MathGame.EditorTools
         {
             var path = $"{MinigamesFolder}/TowerMinigame_{towerLevelIndex + 1:00}.asset";
             var def = LoadOrCreate<TowerMinigameDefinition>(path);
-            def.towerSizes = new List<int>(TowerProgression[towerLevelIndex]);
+            def.towerSizes = new List<int>(TowerSizes);
             def.heroStartingPower = 5;
             // maxBeatableAtOnce и powerPerWin оставляем на дефолтах класса
             // (1 и 1) — это тоже не "сложность уровня", а базовое правило
@@ -152,7 +142,7 @@ namespace MathGame.EditorTools
         {
             var path = $"{MinigamesFolder}/DoorMinigame_{doorLevelIndex + 1:00}.asset";
             var def = LoadOrCreate<DoorMinigameDefinition>(path);
-            def.doorsPerRound = 3;
+            def.doorsPerRound = DoorsPerRound;
             def.correctDoorsRequired = DoorRequiredProgression[doorLevelIndex];
             LinkControllerPrefab(def, DoorMinigamePrefabPath);
             EditorUtility.SetDirty(def);
