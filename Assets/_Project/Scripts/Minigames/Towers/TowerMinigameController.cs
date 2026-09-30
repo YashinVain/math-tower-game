@@ -54,6 +54,7 @@ namespace MathGame.Minigames.Towers
             // Каждая следующая башня дальше по X — отсюда ощущение движения вперёд по локации.
             float towerX = hero.transform.position.x + towerSpacing * (towerIndex + 1);
             var difficulty = _context.BuildDifficulty();
+            var beatableSlots = PickBeatableSlots(size);
 
             for (int i = 0; i < size; i++)
             {
@@ -66,13 +67,48 @@ namespace MathGame.Minigames.Towers
                     golemSlotParent.position.z);
 
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);
-                var problem = _context.ProblemGenerator.Generate(difficulty);
+                var problem = beatableSlots.Contains(i)
+                    ? GenerateProblemRelativeToPower(difficulty, beatable: true)
+                    : GenerateProblemRelativeToPower(difficulty, beatable: false);
                 golem.Init(problem, OnGolemSelected);
                 _activeGolems.Add(golem);
             }
 
             Vector3 heroTarget = new Vector3(towerX - approachOffset, hero.transform.position.y, hero.transform.position.z);
             hero.MoveTo(heroTarget, moveDuration, () => _inputLocked = false);
+        }
+
+        // Выбирает, какие места в башне получат "проходимый" (по силе
+        // герою) пример — случайно, чтобы расположение не угадывалось
+        // заранее, и не больше definition.maxBeatableAtOnce штук сразу.
+        private HashSet<int> PickBeatableSlots(int towerSize)
+        {
+            int budget = Mathf.Clamp(_definition.maxBeatableAtOnce, 0, towerSize);
+            var slots = new HashSet<int>();
+            while (slots.Count < budget)
+                slots.Add(Random.Range(0, towerSize));
+            return slots;
+        }
+
+        // Единой ProblemGenerator недостаточно — ему ничего не известно про
+        // текущую силу героя, а тут нужно подбирать примеры, которые
+        // заведомо игрок либо может, либо пока не может победить. Идём
+        // "перебором": генерируем обычные примеры, пока не найдём такой,
+        // что подходит; если диапазон чисел в настройках совсем не
+        // позволяет найти нужный вариант (например, диапазон настолько
+        // мал, что все примеры меньше силы героя) — отдаём последний
+        // сгенерированный, ошибки не будет, просто в этот раз ограничение
+        // не выдержится идеально.
+        private MathProblem GenerateProblemRelativeToPower(DifficultyContext difficulty, bool beatable)
+        {
+            MathProblem problem = default;
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                problem = _context.ProblemGenerator.Generate(difficulty);
+                bool isBeatable = problem.Answer <= _heroPower;
+                if (isBeatable == beatable) return problem;
+            }
+            return problem;
         }
 
         private void OnGolemSelected(GolemView golem)
