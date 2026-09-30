@@ -24,8 +24,8 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private float towerSpacing = 5f;
         [SerializeField] private float approachOffset = 2.2f;
         [SerializeField] private float moveDuration = 0.6f;
-        [SerializeField] private float cameraOrthographicSize = 4.1f;
-        [SerializeField] private float cameraY = 2.3f;
+        [SerializeField] private float cameraOrthographicSize = 4.8f;
+        [SerializeField] private float cameraY = 3f;
 
         private TowerMinigameDefinition _definition;
         private MinigameRuntimeContext _context;
@@ -97,35 +97,44 @@ namespace MathGame.Minigames.Towers
 
         // Выбирает, какие места в башне получат "проходимый" (по силе
         // герою) пример — случайно, чтобы расположение не угадывалось
-        // заранее, и не больше definition.maxBeatableAtOnce штук сразу.
+        // заранее. Не больше definition.maxBeatableAtOnce штук сразу, но
+        // и не меньше одного — минимум 1 нижняя граница жёсткая: без хотя
+        // бы одного проходимого голема уровень становится непроходимым.
         private HashSet<int> PickBeatableSlots(int towerSize)
         {
-            int budget = Mathf.Clamp(_definition.maxBeatableAtOnce, 0, towerSize);
+            int budget = Mathf.Clamp(_definition.maxBeatableAtOnce, 1, towerSize);
             var slots = new HashSet<int>();
             while (slots.Count < budget)
                 slots.Add(Random.Range(0, towerSize));
             return slots;
         }
 
-        // Единой ProblemGenerator недостаточно — ему ничего не известно про
-        // текущую силу героя, а тут нужно подбирать примеры, которые
-        // заведомо игрок либо может, либо пока не может победить. Идём
-        // "перебором": генерируем обычные примеры, пока не найдём такой,
-        // что подходит; если диапазон чисел в настройках совсем не
-        // позволяет найти нужный вариант (например, диапазон настолько
-        // мал, что все примеры меньше силы героя) — отдаём последний
-        // сгенерированный, ошибки не будет, просто в этот раз ограничение
-        // не выдержится идеально.
+        // Раньше это было "подбором": генерировали обычный случайный пример
+        // и проверяли, подходит ли он по силе — если диапазон чисел в
+        // настройках был сильно меньше или сильно больше силы героя,
+        // подходящий пример мог вообще не встретиться за отведённые
+        // попытки, и после них возвращалось что получилось — то есть
+        // условие "проходимый"/"непроходимый" могло не выполниться совсем.
+        // Правильный способ — строить пример "от ответа" (как уже сделано
+        // для двери с верным ответом в DoorMinigameController): сначала
+        // сами решаем, каким должен быть ответ (обязательно ≤ силы героя,
+        // либо обязательно больше), а затем GenerateWithAnswer собирает
+        // под это число сам пример. Это гарантия, а не вероятность.
         private MathProblem GenerateProblemRelativeToPower(DifficultyContext difficulty, bool beatable)
         {
-            MathProblem problem = default;
-            for (int attempt = 0; attempt < 20; attempt++)
+            int target;
+            if (beatable)
             {
-                problem = _context.ProblemGenerator.Generate(difficulty);
-                bool isBeatable = problem.Answer <= _heroPower;
-                if (isBeatable == beatable) return problem;
+                int upperBound = Mathf.Max(0, _heroPower);
+                target = Random.Range(Mathf.Min(0, upperBound), upperBound + 1);
             }
-            return problem;
+            else
+            {
+                int spread = Mathf.Max(1, difficulty.MaxValue - difficulty.MinValue + 1);
+                target = _heroPower + Random.Range(1, spread + 1);
+            }
+
+            return _context.ProblemGenerator.GenerateWithAnswer(difficulty, target);
         }
 
         private void OnGolemSelected(GolemView golem)

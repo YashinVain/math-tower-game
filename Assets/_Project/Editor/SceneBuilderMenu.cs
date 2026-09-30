@@ -155,9 +155,9 @@ namespace MathGame.EditorTools
             // Controller / DoorMinigameController) сам подгонит
             // orthographicSize и Y под свой тип раскладки (башня растёт
             // вверх, двери — в стороны, общих значений на оба не хватает).
-            camera.orthographicSize = 4.1f;
+            camera.orthographicSize = 4.8f;
             camera.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
-            cameraGo.transform.position = new Vector3(-6f, 2.3f, -10f);
+            cameraGo.transform.position = new Vector3(-6f, 3f, -10f);
             cameraGo.tag = "MainCamera";
             cameraGo.AddComponent<AudioListener>();
             var cameraFollow = cameraGo.AddComponent<CameraFollowX>();
@@ -318,6 +318,12 @@ namespace MathGame.EditorTools
         {
             var hud = CreateUIObject("HUD", canvasTransform);
             AnchorAt(hud, 0.5f, 1f, 320, 120, 0f, -70f);
+
+            // Тёмная полупрозрachная подложка под весь HUD — без неё белый
+            // текст таймера терялся на светлом фоне уровня (он же меняется
+            // по темам, так что полагаться на "фон всегда тёмный" нельзя).
+            var hudBg = hud.gameObject.AddComponent<Image>();
+            hudBg.color = new Color(0f, 0f, 0f, 0.45f);
 
             var timerLabel = CreateLabel(hud, "TimerLabel", "01:30", 40, Color.white, 260, 60, TextAlignmentOptions.Center);
             timerLabel.rectTransform.anchorMin = new Vector2(0.5f, 1f);
