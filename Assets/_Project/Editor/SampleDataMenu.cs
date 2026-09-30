@@ -44,7 +44,7 @@ namespace MathGame.EditorTools
             // если ассет уже существует (LoadOrCreate его не пересоздаёт),
             // старое сериализованное значение само по себе не обновится.
             towerDef.maxBeatableAtOnce = 1;
-            towerDef.powerPerWin = 2;
+            towerDef.powerPerWin = 1;
             LinkControllerPrefab(towerDef, TowerMinigamePrefabPath);
             EditorUtility.SetDirty(towerDef);
 

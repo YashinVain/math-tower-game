@@ -26,6 +26,19 @@ namespace MathGame.Services
 
         private GameSettingsData Load()
         {
+            var result = LoadRaw();
+            // На случай сохранения с диска, сделанного до появления этого
+            // ограничения (или отредактированного руками) — а не только на
+            // случай live-редактирования в SettingsPanel, где та же проверка
+            // тоже есть. Без этого игрок мог бы так и не увидеть экран
+            // настроек и играть со старым слишком узким диапазоном, который
+            // ломает башни (см. комментарий у GameSettingsData.ClampNumberRange).
+            result.ClampNumberRange();
+            return result;
+        }
+
+        private GameSettingsData LoadRaw()
+        {
             if (File.Exists(_filePath))
             {
                 try

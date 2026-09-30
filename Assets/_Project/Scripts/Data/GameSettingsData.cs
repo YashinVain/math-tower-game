@@ -9,7 +9,16 @@ namespace MathGame.Data
     public class GameSettingsData
     {
         public int numberRangeMin = 1;
-        public int numberRangeMax = 10;
+        // Было 10 — подняли до 16. Нижняя причина: в башнях сила героя
+        // растёт с каждой победой и должна уместиться в то, что вообще
+        // можно показать суммой двух чисел из диапазона (2×numberRangeMax).
+        // При слишком узком диапазоне сила героя быстро упирается в свой
+        // потолок (см. EffectivePowerCap в TowerMinigameController), и
+        // тогда ВСЕ примеры на этаже разом становятся "сразу верными" —
+        // баг, который игрок явно видел и просил исключить настройками.
+        // 16 даёт достаточный запас для текущего набора башен (2→3→4 этажа,
+        // +1 к силе за победу); см. также MinNumberRangeWidth ниже.
+        public int numberRangeMax = 16;
 
         public bool additionEnabled = true;
         public bool subtractionEnabled = false;
@@ -28,6 +37,27 @@ namespace MathGame.Data
         // Для младшей аудитории: при неверной двери герой не погибает,
         // просто дверь не открывается.
         public bool doorsEasyModeEnabled = false;
+
+        // Минимальная ширина диапазона чисел (numberRangeMax − numberRangeMin).
+        // Слишком узкий диапазон не оставляет силе героя в башнях места
+        // расти, прежде чем она упрётся в свой потолок (EffectivePowerCap в
+        // TowerMinigameController, рассчитанный от numberRangeMax) — а как
+        // только герой застревает РОВНО на потолке, вообще ВСЕ примеры
+        // следующей башни разом становятся "сразу верными" (см.
+        // ClampNumberRange). 14 — с запасом под текущий набор башен (этажи
+        // 2→3→4, сила растёт на +1 за победу, герой стартует с силой 5).
+        public const int MinNumberRangeWidth = 14;
+
+        // Гарантирует минимальную ширину диапазона — вызывается и здесь
+        // (SettingsService.Load, при каждом запуске игры — иначе старое
+        // сохранение с узким диапазоном так и оставалось бы узким, пока
+        // игрок сам не откроет экран настроек), и из SettingsPanel при
+        // live-редактировании слайдеров.
+        public void ClampNumberRange()
+        {
+            if (numberRangeMax - numberRangeMin < MinNumberRangeWidth)
+                numberRangeMax = numberRangeMin + MinNumberRangeWidth;
+        }
 
         public MathOperation ToAllowedOperations()
         {
