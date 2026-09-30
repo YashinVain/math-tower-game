@@ -47,16 +47,16 @@ namespace MathGame.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("Готово: Golem, TowerMinigame, Door, DoorMinigame, LevelButton собраны. Дальше: MathGame → 2. Bootstrap Sample Level Data.");
+            Debug.Log("Готово: Golem, TowerMinigame, Door, DoorMinigame, LevelButton собраны. Дальше: MathGame → 2. Build Level Catalog (10 Levels).");
         }
 
         [MenuItem("MathGame/0. Build Absolutely Everything")]
         public static void BuildEverything()
         {
             BuildPrefabs();
-            SampleDataMenu.CreateSampleData();
+            LevelCatalogMenu.BuildLevelCatalog();
             SceneBuilderMenu.BuildAllScenes();
-            Debug.Log("Готово: префабы, тестовые уровни и все 3 сцены собраны и добавлены в Build Settings. Можно открывать Boot.unity и жать Play.");
+            Debug.Log("Готово: префабы, все 10 уровней и все 3 сцены собраны и добавлены в Build Settings. Можно открывать Boot.unity и жать Play.");
         }
 
         private static bool AlreadyExists(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path) != null;
