@@ -1,0 +1,97 @@
+ГОТОВЫЕ ПРОМПТЫ ДЛЯ НЕЙРОСЕТИ
+Каждый промпт ниже полностью самодостаточный: стиль и общие правила уже
+вписаны в него. Копируйте целиком один блок (только текст под строкой с
+названием файла) и вставляйте в нейросеть. Название файла в строке "###"
+копировать не нужно — это просто подсказка, как сохранить результат.
+
+Порядок: сначала hero.png. Остальные персонажи/двери лучше делать,
+прикладывая готового героя как образец стиля (в промптах это уже учтено).
+
+
+### 1. hero.png  (сохранить как Assets/_Project/Art/Characters/hero.png)
+
+Cute friendly cartoon 2D game character for a children's math adventure game. A small brave young hero, front view, standing pose, friendly smiling face, big expressive eyes, simple blue cape and small boots, full body visible from head to feet. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The character is centered and fills about 85% of the image, feet touching the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image is attached, match its art style exactly.
+
+
+
+### 2. golem.png  (Assets/_Project/Art/Characters/golem.png)
+
+Cute friendly cartoon 2D game character for a children's math adventure game. A chunky friendly stone golem monster (an ogre), front view, standing pose, big round fists, stubby legs, purple-gray stone body with small mossy patches, big round eyes and a goofy grin, cute and funny, not scary at all, full body visible from head to feet. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The character is centered and fills about 85% of the image, feet touching the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the hero is attached, match its art style exactly (same line thickness, same color style).
+
+
+
+### 3. golem_2.png  (Assets/_Project/Art/Characters/golem_2.png) — необязательно
+
+Cute friendly cartoon 2D game character for a children's math adventure game. A chunky friendly stone golem monster (an ogre), front view, standing pose, big round fists, stubby legs, GREEN stone body with small mossy patches, big round eyes and a goofy grin, cute and funny, not scary at all, full body visible from head to feet. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The character is centered and fills about 85% of the image, feet touching the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the other golem is attached, keep the exact same pose, proportions and art style and only change the body color to green.
+
+
+
+### 4. golem_3.png  (Assets/_Project/Art/Characters/golem_3.png) — необязательно
+
+Cute friendly cartoon 2D game character for a children's math adventure game. A chunky friendly stone golem monster (an ogre), front view, standing pose, big round fists, stubby legs, ORANGE stone body with small mossy patches, big round eyes and a goofy grin, cute and funny, not scary at all, full body visible from head to feet. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The character is centered and fills about 85% of the image, feet touching the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the other golem is attached, keep the exact same pose, proportions and art style and only change the body color to orange.
+
+
+
+### 5. door_closed.png  (Assets/_Project/Art/Doors/door_closed.png)
+
+Cute friendly cartoon 2D game object for a children's math adventure game. A sturdy wooden arched dungeon door, CLOSED, front view, brown planks with dark metal hinges and a round metal handle, small stone frame around it. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The door is centered and fills about 85% of the image, the bottom of the door touches the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image is attached, match its art style exactly.
+
+
+
+### 6. door_open.png  (Assets/_Project/Art/Doors/door_open.png)
+
+Cute friendly cartoon 2D game object for a children's math adventure game. A sturdy wooden arched dungeon door, WIDE OPEN, front view, brown planks with dark metal hinges, small stone frame around it, warm golden light glowing from the doorway inside, inviting and happy. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The door is centered and fills about 85% of the image, the bottom of the door touches the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the closed door is attached, keep the exact same door design, size and art style, only open it.
+
+
+
+### 7. door_locked.png  (Assets/_Project/Art/Doors/door_locked.png)
+
+Cute friendly cartoon 2D game object for a children's math adventure game. A sturdy wooden arched dungeon door, CLOSED and LOCKED, front view, brown planks with dark metal hinges, small stone frame around it, a big golden padlock in the middle and a few iron chains crossing the door, looks firmly shut but not scary. Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 512x512 pixels. The door is centered and fills about 85% of the image, the bottom of the door touches the bottom edge, small margins on the sides. Plain solid flat pure white background, no ground, no shadow, no scenery, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the closed door is attached, keep the exact same door design, size and art style, only add the padlock and chains.
+
+
+
+### 8. bg_day.png  (Assets/_Project/Art/Backgrounds/bg_day.png) — уровни 1–2
+
+Cute friendly cartoon 2D game background for a children's math adventure game. A bright sunny day: clear blue sky with a few soft white clouds, gentle green grassy hills in the distance, and a flat empty open grassy ground occupying the lower third of the image where characters will stand. Flat bright colors with soft clean outlines, simple shapes, soft gradients, cheerful palette, clean vector-like look. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. Calm composition with empty space in the middle, nothing important near the left and right edges. No characters, no animals, no buildings, no text, no letters, no numbers, no watermark, no frame.
+
+
+
+### 9. bg_sunset.png  (Assets/_Project/Art/Backgrounds/bg_sunset.png) — уровни 3–5
+
+Cute friendly cartoon 2D game background for a children's math adventure game. A warm sunset: orange, pink and soft yellow sky with a low sun and a few light clouds, rolling green-yellow hills in the distance, and a flat empty open ground occupying the lower third of the image where characters will stand. Flat bright colors with soft clean outlines, simple shapes, soft gradients, cheerful palette, clean vector-like look. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. Calm composition with empty space in the middle, nothing important near the left and right edges. No characters, no animals, no buildings, no text, no letters, no numbers, no watermark, no frame. If a reference image of the day background is attached, keep the same art style and the same ground position.
+
+
+
+### 10. bg_dusk.png  (Assets/_Project/Art/Backgrounds/bg_dusk.png) — уровни 6–8
+
+Cute friendly cartoon 2D game background for a children's math adventure game. Early evening dusk: deep purple and blue sky with the first few small stars and a thin crescent moon, dark blue-green rolling hills in the distance, and a flat empty open ground occupying the lower third of the image where characters will stand. Flat colors with soft clean outlines, simple shapes, soft gradients, slightly mysterious but still friendly mood, clean vector-like look. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. Calm composition with empty space in the middle, nothing important near the left and right edges. No characters, no animals, no buildings, no text, no letters, no numbers, no watermark, no frame. If a reference image of the day background is attached, keep the same art style and the same ground position.
+
+
+
+### 11. bg_night.png  (Assets/_Project/Art/Backgrounds/bg_night.png) — уровни 9–10
+
+Cute friendly cartoon 2D game background for a children's math adventure game. A magical starry night: deep navy-blue sky full of twinkling stars, a big glowing round moon, dark teal rolling hills in the distance, and a flat empty open ground occupying the lower third of the image where characters will stand. Flat colors with soft clean outlines, simple shapes, soft gradients, magical but friendly mood, not scary, clean vector-like look. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. Calm composition with empty space in the middle, nothing important near the left and right edges. No characters, no animals, no buildings, no text, no letters, no numbers, no watermark, no frame. If a reference image of the day background is attached, keep the same art style and the same ground position.
+
+
+
+### 12. menu_background.png  (Assets/_Project/Art/UI/menu_background.png)
+
+Cute friendly cartoon 2D game menu background for a children's math adventure game. A cheerful fantasy landscape: a tall friendly stone tower with a little flag on top and a wooden arched door at its base, standing in the distance on the right side, green hills, blue sky with soft clouds, a winding path leading to the tower. The center and the left side of the image are calm and mostly empty, because menu buttons will be placed there. Flat bright colors with soft clean outlines, simple shapes, soft gradients, cheerful palette, clean vector-like look. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. No characters, no text, no letters, no numbers, no title, no watermark, no frame. If a reference image is attached, match its art style exactly.
+
+
+
+### 13. level_button_frame.png  (Assets/_Project/Art/UI/level_button_frame.png)
+
+Cute friendly cartoon 2D game UI element for a children's math adventure game. A rounded square button frame made of warm wood with a soft stone-colored border, slightly beveled, with a plain light cream empty area in the middle (completely empty inside, where a number will be placed later). Flat bright colors with soft clean outlines, simple shapes, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 256x256 pixels, the button fills about 92% of the image and is centered. Plain solid flat pure white background outside the button, no shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark. If a reference image is attached, match its art style exactly.
+
+
+
+### 14. icon_lock.png  (Assets/_Project/Art/UI/icon_lock.png)
+
+Cute friendly cartoon 2D game UI icon for a children's math adventure game. A shiny golden padlock, closed, front view, simple rounded shapes, with a small dark keyhole. Flat bright colors with soft clean outlines, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 256x256 pixels, the icon is centered and fills about 80% of the image. Plain solid flat pure white background, no shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image is attached, match its art style exactly.
+
+
+
+### 15. icon_check.png  (Assets/_Project/Art/UI/icon_check.png)
+
+Cute friendly cartoon 2D game UI icon for a children's math adventure game. A bold bright green check mark inside a round white-bordered badge, simple rounded shapes, happy and clear. Flat bright colors with soft clean outlines, cheerful palette, clean vector-like look. Square image, 1:1 aspect ratio, 256x256 pixels, the icon is centered and fills about 80% of the image. Plain solid flat pure white background, no shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image is attached, match its art style exactly.
