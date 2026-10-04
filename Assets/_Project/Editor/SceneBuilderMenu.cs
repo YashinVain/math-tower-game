@@ -116,6 +116,10 @@ namespace MathGame.EditorTools
             CreateEventSystem();
             var canvasGo = CreateCanvas(null, "Canvas");
 
+            // Нарисованный фон меню — первым ребёнком холста, чтобы все
+            // панели рисовались поверх него.
+            AddMenuBackground(canvasGo.transform);
+
             var (mainPanelGo, playButton, settingsButton, quitButton) = BuildMainPanel(canvasGo.transform);
             var (levelSelectGo, levelSelectBack) = BuildLevelSelectPanel(canvasGo.transform);
             var (settingsGo, settingsBack) = BuildSettingsPanel(canvasGo.transform);
@@ -179,11 +183,19 @@ namespace MathGame.EditorTools
             // мини-игры.
             background.transform.SetParent(cameraGo.transform, false);
             background.transform.localPosition = new Vector3(0f, 0f, 20f);
-            background.transform.localScale = new Vector3(80f, 40f, 1f);
+            // Раньше тут был фиксированный масштаб 80×40 для однотонного
+            // квадрата. Теперь у фона нарисованная картинка, и её размер и
+            // положение каждый кадр подгоняет BackgroundFitter под реальный
+            // обзор камеры (без искажений, низ картинки — на нижнем краю
+            // экрана). Какая именно картинка — выбирает LevelThemeApplier
+            // по теме уровня; луг стоит здесь по умолчанию, чтобы сцена в
+            // редакторе не была пустой.
             var bgRenderer = background.AddComponent<SpriteRenderer>();
-            bgRenderer.sprite = GetPlaceholderSprite();
-            bgRenderer.color = new Color(0.7f, 0.85f, 0.95f);
+            var defaultBackground = LoadArtSprite(ArtSpecs.Backgrounds[0]);
+            bgRenderer.sprite = defaultBackground != null ? defaultBackground : GetPlaceholderSprite();
+            bgRenderer.color = Color.white;
             bgRenderer.sortingOrder = -10;
+            background.AddComponent<BackgroundFitter>();
             var themeApplier = background.AddComponent<LevelThemeApplier>();
             SetField(themeApplier, "backgroundRenderer", bgRenderer);
 
@@ -215,6 +227,30 @@ namespace MathGame.EditorTools
             SetField(gameplayController, "pausePanel", pauseGo.GetComponent<PausePanel>());
 
             EditorSceneManager.SaveScene(scene, path);
+        }
+
+        // Фон меню: картинка 16:9 на весь экран. AspectRatioFitter в режиме
+        // EnvelopeParent увеличивает её ровно настолько, чтобы закрыть весь
+        // экран при любой форме окна, не искажая (лишнее обрезается). Сверху
+        // лёгкое затемнение (25%), чтобы белые подписи и кнопки читались на
+        // светлом небе.
+        private static void AddMenuBackground(Transform canvasTransform)
+        {
+            var sprite = LoadArtSprite(ArtSpecs.MenuBackground);
+            if (sprite == null) return;
+
+            var bgRect = CreateUIObject("MenuBackground", canvasTransform);
+            var bgImage = bgRect.gameObject.AddComponent<Image>();
+            bgImage.sprite = sprite;
+            bgImage.raycastTarget = false;
+            var fitter = bgRect.gameObject.AddComponent<AspectRatioFitter>();
+            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
+
+            var dimRect = CreateFullScreenPanel(canvasTransform, "MenuDimmer");
+            var dimImage = dimRect.gameObject.AddComponent<Image>();
+            dimImage.color = new Color(0f, 0f, 0f, 0.25f);
+            dimImage.raycastTarget = false;
         }
 
         private static (GameObject panelGo, Button play, Button settings, Button quit) BuildMainPanel(Transform canvasTransform)
@@ -271,6 +307,11 @@ namespace MathGame.EditorTools
         private static (GameObject panelGo, Button back) BuildSettingsPanel(Transform canvasTransform)
         {
             var panel = CreateFullScreenPanel(canvasTransform, "SettingsPanel");
+
+            // Тёмная подложка на весь экран: слайдеры и белые подписи
+            // настроек плохо читались бы прямо на нарисованном фоне меню.
+            var panelBackground = panel.gameObject.AddComponent<Image>();
+            panelBackground.color = new Color(0f, 0f, 0f, 0.72f);
 
             // Сверху — быстрая автонастройка под возраст (4 кнопки, см.
             // AgePresets). Остальные ряды из-за этого начинаются чуть ниже

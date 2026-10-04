@@ -6,14 +6,22 @@ using MathGame.Utils;
 
 namespace MathGame.Minigames.Towers
 {
-    // Один голем в башне: показывает пример в формате "x = ...", хранит
-    // ответ и сообщает наружу о выборе игрока. Сам не решает, победил герой
-    // или нет — это знает только TowerMinigameController (у него есть
-    // текущая сила героя).
+    // Один гоблин (в коде по-прежнему "голем" — так называлась сущность в
+    // самом начале проекта) в башне: показывает пример в формате "x = ...",
+    // хранит ответ и сообщает наружу о выборе игрока. Сам не решает,
+    // победил герой или нет — это знает только TowerMinigameController (у
+    // него есть текущая сила героя).
     [RequireComponent(typeof(SpriteRenderer))]
     public class GolemView : MonoBehaviour
     {
         [SerializeField] private TextMeshPro expressionLabel;
+
+        // Несколько внешних видов гоблина (зелёный, тёмный в красном,
+        // вожак в фиолетовом плаще): каждому новому гоблину в башне
+        // выбирается случайный, чтобы башни не были однообразными. Высота у
+        // всех одинаковая (задаётся при импорте картинок, см.
+        // ArtImportSettings), поэтому подпись над головой стоит ровно.
+        [SerializeField] private Sprite[] variants;
 
         private Action<GolemView> _onSelected;
 
@@ -24,6 +32,26 @@ namespace MathGame.Minigames.Towers
             Answer = problem.Answer;
             expressionLabel.text = $"x = {problem.Expression}";
             _onSelected = onSelected;
+
+            PickVariant();
+        }
+
+        private void PickVariant()
+        {
+            if (variants == null || variants.Length == 0) return;
+
+            var spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer.sprite = variants[UnityEngine.Random.Range(0, variants.Length)];
+
+            // Размер кликабельной области — по реальной картинке (у разных
+            // вариантов она чуть разной ширины).
+            var box = GetComponent<BoxCollider2D>();
+            if (box != null)
+            {
+                Bounds bounds = spriteRenderer.sprite.bounds;
+                box.size = bounds.size;
+                box.offset = bounds.center;
+            }
         }
 
         private void OnMouseDown()

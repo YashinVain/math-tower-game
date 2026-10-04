@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using TMPro;
 using MathGame.Data;
@@ -10,13 +11,20 @@ namespace MathGame.Minigames.Doors
     // сообщает наружу о выборе игрока. Не решает сама, правильная ли она, —
     // это знает только DoorMinigameController (у него есть текущее целевое
     // число героя).
+    //
+    // У двери три картинки: закрытая (по умолчанию), открытая (выбрана
+    // правильно — внутри золотой свет) и запертая на замок и цепи
+    // (упрощённый режим: неверная дверь просто не открывается). Если в
+    // обычном режиме выбрана неверная дверь — дверь открывается и из неё
+    // выскакивает гоблин (ambusherRenderer).
     [RequireComponent(typeof(SpriteRenderer))]
     public class DoorView : MonoBehaviour
     {
         [SerializeField] private TextMeshPro expressionLabel;
         [SerializeField] private SpriteRenderer doorRenderer;
-        [SerializeField] private Color lockedFlashColor = new Color(0.45f, 0.45f, 0.45f);
-        [SerializeField] private Color ambushFlashColor = new Color(0.8f, 0.15f, 0.15f);
+        [SerializeField] private Sprite openSprite;
+        [SerializeField] private Sprite lockedSprite;
+        [SerializeField] private SpriteRenderer ambusherRenderer;
 
         private Action<DoorView> _onChosen;
 
@@ -34,27 +42,68 @@ namespace MathGame.Minigames.Doors
             _onChosen?.Invoke(this);
         }
 
+        // Правильная дверь: открывается (золотой свет), слегка "подпрыгивает",
+        // через долю секунды мини-игра идёт дальше.
         public void PlayOpenCorrect(Action onComplete)
         {
             _onChosen = null;
-            var targetScale = new Vector3(transform.localScale.x, transform.localScale.y * 0.05f, transform.localScale.z);
-            StartCoroutine(SimpleTween.ScaleTo(transform, targetScale, 0.3f, onComplete));
+            if (openSprite != null) doorRenderer.sprite = openSprite;
+            StartCoroutine(OpenRoutine(onComplete));
         }
 
-        // Упрощённый режим: дверь просто не открывается, герой не погибает.
+        private IEnumerator OpenRoutine(Action onComplete)
+        {
+            Vector3 baseScale = transform.localScale;
+            yield return SimpleTween.ScaleTo(transform, baseScale * 1.06f, 0.12f);
+            yield return SimpleTween.ScaleTo(transform, baseScale, 0.12f);
+            yield return SimpleTween.Wait(0.35f);
+            onComplete?.Invoke();
+        }
+
+        // Упрощённый режим: дверь запирается на замок и цепи и дрожит, герой
+        // не погибает, можно выбрать другую дверь.
         public void PlayLocked()
         {
             _onChosen = null;
-            StartCoroutine(SimpleTween.ColorFlash(doorRenderer, lockedFlashColor, 0.3f));
+            if (lockedSprite != null) doorRenderer.sprite = lockedSprite;
+            StartCoroutine(ShakeRoutine());
         }
 
-        // Обычный режим: из двери выходит голем и побеждает героя. Пока
-        // это просто цветовая вспышка — заменится на спрайт голема и его
-        // анимацию, когда появится финальный арт (см. чат про арт-ассеты).
+        private IEnumerator ShakeRoutine()
+        {
+            Vector3 start = transform.localPosition;
+            const float duration = 0.35f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float strength = 1f - elapsed / duration;
+                transform.localPosition = start + new Vector3(Mathf.Sin(elapsed * 70f) * 0.09f * strength, 0f, 0f);
+                yield return null;
+            }
+            transform.localPosition = start;
+        }
+
+        // Обычный режим: дверь открывается, из неё выскакивает гоблин и
+        // побеждает героя, после этого мини-игра сообщает о поражении.
         public void PlayGolemAmbush(Action onComplete)
         {
             _onChosen = null;
-            StartCoroutine(SimpleTween.ColorFlash(doorRenderer, ambushFlashColor, 0.5f, onComplete));
+            if (openSprite != null) doorRenderer.sprite = openSprite;
+            StartCoroutine(AmbushRoutine(onComplete));
+        }
+
+        private IEnumerator AmbushRoutine(Action onComplete)
+        {
+            if (ambusherRenderer != null)
+            {
+                var ambusher = ambusherRenderer.transform;
+                ambusher.localScale = Vector3.zero;
+                ambusherRenderer.gameObject.SetActive(true);
+                yield return SimpleTween.ScaleTo(ambusher, Vector3.one, 0.25f);
+            }
+            yield return SimpleTween.Wait(0.6f);
+            onComplete?.Invoke();
         }
     }
 }

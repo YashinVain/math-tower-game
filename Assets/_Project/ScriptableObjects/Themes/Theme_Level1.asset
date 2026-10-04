@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec494e7b6f7ba61479674341bf05c376, type: 3}
   m_Name: Theme_Level1
   m_EditorClassIdentifier: Assembly-CSharp::MathGame.Data.LevelVisualTheme
-  backgroundSprite: {fileID: 0}
-  ambientTint: {r: 0.75, g: 0.85, b: 0.95, a: 1}
+  backgroundSprite: {fileID: 21300000, guid: b9c9062e5d638314a960b0dfe4b40124, type: 3}
+  ambientTint: {r: 1, g: 1, b: 1, a: 1}
   darknessAmount: 0

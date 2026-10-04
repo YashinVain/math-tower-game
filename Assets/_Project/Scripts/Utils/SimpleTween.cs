@@ -43,6 +43,18 @@ namespace MathGame.Utils
             onComplete?.Invoke();
         }
 
+        // Пауза без привязки к реальному времени: считает Time.deltaTime, как
+        // и остальные твины, поэтому тоже замирает на паузе игры.
+        public static IEnumerator Wait(float seconds)
+        {
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
         public static IEnumerator ColorFlash(SpriteRenderer renderer, Color flashColor, float duration, Action onComplete = null)
         {
             Color baseColor = renderer.color;

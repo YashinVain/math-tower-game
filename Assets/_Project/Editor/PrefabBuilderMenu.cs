@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,23 +20,26 @@ namespace MathGame.EditorTools
     // Каждый метод сначала проверяет, нет ли уже готового префаба по этому
     // пути — если есть, пропускает его и не перезаписывает (чтобы не
     // затереть ручные правки, если вы уже что-то донастроили после
-    // предыдущего запуска).
+    // предыдущего запуска). Поэтому, чтобы пересобрать префаб с нуля (как
+    // после подключения графики), его файл сначала нужно удалить.
+    //
+    // Картинки берутся из Assets/_Project/Art (пути и размеры в игре — в
+    // ArtSpecs). Размер картинки в мире задаётся при импорте (Pixels Per
+    // Unit), поэтому у всех объектов масштаб 1, а позиция объекта — это
+    // "ноги" персонажа/низ двери (pivot внизу картинки).
     public static class PrefabBuilderMenu
     {
         private const string TowersFolder = "Assets/_Project/Prefabs/Minigames/Towers";
         private const string DoorsFolder = "Assets/_Project/Prefabs/Minigames/Doors";
         private const string UIFolder = "Assets/_Project/Prefabs/UI";
 
-        // См. комментарий у BuildGolemPrefab: во сколько раз герой/голем в
-        // башнях крупнее своего "базового" мирового размера — подобрано
-        // так, чтобы компенсировать более широкий обзор камеры башен
-        // (cameraOrthographicSize в TowerMinigameController) и выглядеть
-        // почти так же крупно, как герой/двери в мини-игре "Двери".
-        private const float HeroTowerGolemScale = 1.35f;
-
         [MenuItem("MathGame/1. Build Prefabs")]
         public static void BuildPrefabs()
         {
+            // Размер картинок в мире считается при импорте — убедимся, что
+            // все картинки импортированы по актуальным правилам до сборки.
+            ArtImportSettings.ReimportAll();
+
             var golemPrefab = BuildGolemPrefab();
             BuildTowerMinigamePrefab(golemPrefab);
 
@@ -61,6 +65,18 @@ namespace MathGame.EditorTools
 
         private static bool AlreadyExists(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path) != null;
 
+        // Спрайт-рендерер с картинкой (или квадратом-заглушкой, если картинки
+        // нет). Цвет белый — то есть без тонировки: цвет рисунка не
+        // искажается (раньше квадраты красились в цвет через color).
+        private static SpriteRenderer AddArtRenderer(GameObject go, Sprite sprite, int sortingOrder)
+        {
+            var spriteRenderer = go.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = sprite != null ? sprite : GetPlaceholderSprite();
+            spriteRenderer.color = Color.white;
+            spriteRenderer.sortingOrder = sortingOrder;
+            return spriteRenderer;
+        }
+
         private static GameObject BuildGolemPrefab()
         {
             var path = $"{TowersFolder}/Golem.prefab";
@@ -70,25 +86,27 @@ namespace MathGame.EditorTools
                 return AssetDatabase.LoadAssetAtPath<GameObject>(path);
             }
 
+            // Файл и класс по-прежнему называются Golem (так сущность
+            // называлась в самом начале), но на экране это гоблин, у
+            // которого три внешних вида — выбирается случайный.
+            var variants = new List<Sprite>();
+            foreach (var spritePath in ArtSpecs.Goblins)
+            {
+                var sprite = LoadArtSprite(spritePath);
+                if (sprite != null) variants.Add(sprite);
+            }
+
             var golem = new GameObject("Golem");
-            // Башням нужен более широкий обзор камеры, чтобы поместились
-            // несколько этажей друг над другом (см. cameraOrthographicSize
-            // в TowerMinigameController) — а более широкий обзор при той же
-            // величине спрайта сам по себе делает его МЕЛЬЧЕ на экране.
-            // HeroTowerGolemScale компенсирует это, увеличивая сам спрайт в
-            // мировых единицах, чтобы голем/герой в башнях выглядели
-            // настолько же крупно, насколько герой/двери в "Дверях" (полностью
-            // сравнять размеры при этом нельзя — 4 этажа физически не
-            // поместятся в такой же узкий обзор, как у одиночного ряда дверей).
-            golem.transform.localScale = new Vector3(HeroTowerGolemScale, HeroTowerGolemScale, 1f);
-            var golemRenderer = golem.AddComponent<SpriteRenderer>();
-            golemRenderer.sprite = GetPlaceholderSprite();
-            golemRenderer.color = new Color(0.45f, 0.2f, 0.55f);
+            var golemRenderer = AddArtRenderer(golem, variants.Count > 0 ? variants[0] : null, 1);
+            // Коллайдер добавляется ПОСЛЕ назначения спрайта — Unity сразу
+            // подгоняет его под размер картинки (а GolemView потом
+            // подгоняет под выбранный вид).
             golem.AddComponent<BoxCollider2D>();
             var golemView = golem.AddComponent<GolemView>();
 
-            var label = CreateWorldLabel(golem.transform, "ExpressionLabel", 0.75f);
+            var label = CreateWorldLabel(golem.transform, "ExpressionLabel", ArtSpecs.GoblinHeight + ArtSpecs.LabelGap);
             SetField(golemView, "expressionLabel", label);
+            SetObjectArrayField(golemView, "variants", variants.ToArray());
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(golem, path);
             Object.DestroyImmediate(golem);
@@ -110,13 +128,10 @@ namespace MathGame.EditorTools
             var hero = new GameObject("Hero");
             hero.transform.SetParent(root.transform, false);
             hero.transform.localPosition = new Vector3(-2f, 0f, 0f);
-            hero.transform.localScale = new Vector3(HeroTowerGolemScale, HeroTowerGolemScale, 1f);
-            var heroRenderer = hero.AddComponent<SpriteRenderer>();
-            heroRenderer.sprite = GetPlaceholderSprite();
-            heroRenderer.color = new Color(0.3f, 0.6f, 1f);
+            AddArtRenderer(hero, LoadArtSprite(ArtSpecs.Hero), 1);
             var heroView = hero.AddComponent<HeroView>();
 
-            var powerLabel = CreateWorldLabel(hero.transform, "PowerLabel", 0.75f);
+            var powerLabel = CreateWorldLabel(hero.transform, "PowerLabel", ArtSpecs.HeroHeight + ArtSpecs.LabelGap);
 
             var golemSlots = new GameObject("GolemSlots");
             golemSlots.transform.SetParent(root.transform, false);
@@ -140,15 +155,23 @@ namespace MathGame.EditorTools
             }
 
             var door = new GameObject("Door");
-            var renderer = door.AddComponent<SpriteRenderer>();
-            renderer.sprite = GetPlaceholderSprite();
-            renderer.color = new Color(0.55f, 0.35f, 0.2f);
+            var renderer = AddArtRenderer(door, LoadArtSprite(ArtSpecs.DoorClosed), 0);
             door.AddComponent<BoxCollider2D>();
             var doorView = door.AddComponent<DoorView>();
 
-            var label = CreateWorldLabel(door.transform, "ExpressionLabel", 0.75f);
+            var label = CreateWorldLabel(door.transform, "ExpressionLabel", ArtSpecs.DoorHeight + ArtSpecs.LabelGap);
             SetField(doorView, "expressionLabel", label);
             SetField(doorView, "doorRenderer", renderer);
+            SetField(doorView, "openSprite", LoadArtSprite(ArtSpecs.DoorOpen));
+            SetField(doorView, "lockedSprite", LoadArtSprite(ArtSpecs.DoorLocked));
+
+            // Гоблин-засада: выскакивает из двери, когда в обычном режиме
+            // выбрана неверная дверь. Пока дверь не открыта — выключен.
+            var ambusher = new GameObject("Ambusher");
+            ambusher.transform.SetParent(door.transform, false);
+            var ambusherRenderer = AddArtRenderer(ambusher, LoadArtSprite(ArtSpecs.Goblins[0]), 2);
+            ambusher.SetActive(false);
+            SetField(doorView, "ambusherRenderer", ambusherRenderer);
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(door, path);
             Object.DestroyImmediate(door);
@@ -169,9 +192,7 @@ namespace MathGame.EditorTools
 
             var hero = new GameObject("Hero");
             hero.transform.SetParent(root.transform, false);
-            var doorHeroRenderer = hero.AddComponent<SpriteRenderer>();
-            doorHeroRenderer.sprite = GetPlaceholderSprite();
-            doorHeroRenderer.color = new Color(0.3f, 0.6f, 1f);
+            AddArtRenderer(hero, LoadArtSprite(ArtSpecs.Hero), 1);
             // HeroView здесь не для ходьбы (герой в "Дверях" не двигается) —
             // он нужен только за тем, что делает в Awake(): сообщает
             // CameraFollowX, за кем следить. Без этого камера в сценах
@@ -179,7 +200,7 @@ namespace MathGame.EditorTools
             // стартовой позиции.
             hero.AddComponent<HeroView>();
 
-            var targetLabel = CreateWorldLabel(hero.transform, "HeroTargetLabel", 0.75f);
+            var targetLabel = CreateWorldLabel(hero.transform, "HeroTargetLabel", ArtSpecs.HeroHeight + ArtSpecs.LabelGap);
 
             var doors = new GameObject("Doors");
             doors.transform.SetParent(root.transform, false);
@@ -198,6 +219,11 @@ namespace MathGame.EditorTools
             Object.DestroyImmediate(root);
         }
 
+        // Кнопка уровня: рамка из дерева и камня, внутри номер; для
+        // закрытого уровня поверх рамки затемнение и замок, для пройденного
+        // — золотая медаль с галочкой в углу. Включением и выключением
+        // замка и медали занимается LevelButton.Setup (код не менялся —
+        // меняется только то, что нарисовано).
         private static void BuildLevelButtonPrefab()
         {
             var path = $"{UIFolder}/LevelButton.prefab";
@@ -207,37 +233,76 @@ namespace MathGame.EditorTools
                 return;
             }
 
+            var frameSprite = LoadArtSprite(ArtSpecs.LevelButtonFrame);
+            var lockSprite = LoadArtSprite(ArtSpecs.IconLock);
+            var checkSprite = LoadArtSprite(ArtSpecs.IconCheck);
+
             var buttonGo = new GameObject("LevelButton", typeof(RectTransform));
             var rect = buttonGo.GetComponent<RectTransform>();
             SetPreferredSize(buttonGo, 160, 160);
 
             var image = buttonGo.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.9f);
+            image.sprite = frameSprite;
+            image.color = frameSprite != null ? Color.white : new Color(1f, 1f, 1f, 0.9f);
+            image.preserveAspect = true;
             var button = buttonGo.AddComponent<Button>();
             button.targetGraphic = image;
+
+            // Стандартная "недоступная" тонировка кнопки делает её
+            // полупрозрачной — для закрытого уровня это бы просвечивало
+            // фон сквозь рамку. Закрытость показывает затемнение с замком,
+            // поэтому здесь цвет недоступной кнопки не меняется.
+            var colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1f, 0.93f, 0.75f);
+            colors.pressedColor = new Color(0.78f, 0.78f, 0.78f);
+            colors.selectedColor = Color.white;
+            colors.disabledColor = Color.white;
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
 
             var numberRect = CreateUIObject("NumberLabel", rect);
             StretchFull(numberRect);
             var numberLabel = numberRect.gameObject.AddComponent<TextMeshProUGUI>();
             numberLabel.text = "1";
-            numberLabel.fontSize = 48;
-            numberLabel.color = Color.black;
+            numberLabel.fontSize = 64;
+            numberLabel.fontStyle = FontStyles.Bold;
+            // Светлый цвет: внутри рамки тёмный "пергамент".
+            numberLabel.color = new Color(0.98f, 0.92f, 0.75f);
             numberLabel.alignment = TextAlignmentOptions.Center;
+            numberLabel.raycastTarget = false;
 
-            var lockIcon = CreateIcon(rect, "LockIcon", new Color(0.15f, 0.15f, 0.15f, 0.75f), 160, 160);
-            var lockRect = lockIcon.rectTransform;
-            StretchFull(lockRect);
+            // Закрытый уровень: рамка затемняется (та же картинка рамки,
+            // закрашенная в полупрозрачный чёрный — повторяет скруглённые
+            // углы) и по центру замок.
+            var lockOverlay = CreateIcon(rect, "LockIcon", new Color(0f, 0f, 0f, 0.6f), 160, 160);
+            if (frameSprite != null) lockOverlay.sprite = frameSprite;
+            lockOverlay.preserveAspect = true;
+            lockOverlay.raycastTarget = false;
+            StretchFull(lockOverlay.rectTransform);
 
-            var completedIcon = CreateIcon(rect, "CompletedIcon", new Color(0.25f, 0.8f, 0.35f, 0.85f), 36, 36);
+            var lockImage = CreateIcon(lockOverlay.rectTransform, "LockSprite", Color.white, 70, 90);
+            if (lockSprite != null) lockImage.sprite = lockSprite;
+            lockImage.preserveAspect = true;
+            lockImage.raycastTarget = false;
+            AnchorAt(lockImage.rectTransform, 0.5f, 0.5f, 70, 90);
+
+            // Пройденный уровень: золотая медаль с галочкой в правом верхнем
+            // углу, чуть выступает за рамку.
+            var completedIcon = CreateIcon(rect, "CompletedIcon", Color.white, 60, 60);
+            if (checkSprite != null) completedIcon.sprite = checkSprite;
+            else completedIcon.color = new Color(0.25f, 0.8f, 0.35f, 0.85f);
+            completedIcon.preserveAspect = true;
+            completedIcon.raycastTarget = false;
             var completedRect = completedIcon.rectTransform;
             completedRect.anchorMin = new Vector2(1, 1);
             completedRect.anchorMax = new Vector2(1, 1);
-            completedRect.anchoredPosition = new Vector2(-20, -20);
+            completedRect.anchoredPosition = new Vector2(-8, -8);
 
             var levelButton = buttonGo.AddComponent<LevelButton>();
             SetField(levelButton, "button", button);
             SetField(levelButton, "numberLabel", numberLabel);
-            SetField(levelButton, "lockIcon", lockIcon.gameObject);
+            SetField(levelButton, "lockIcon", lockOverlay.gameObject);
             SetField(levelButton, "completedIcon", completedIcon.gameObject);
 
             PrefabUtility.SaveAsPrefabAsset(buttonGo, path);
@@ -245,13 +310,14 @@ namespace MathGame.EditorTools
         }
 
         // fontSize — мировые единицы, не пиксели (прошли путь 4 → 0.5 →
-        // 1.0, теперь 1.3 — крупнее по просьбе, всё ещё без наездов).
-        // yOffset тоже подбирался отдельно: раньше подпись одного этажа
-        // (yOffset=1 над телом) оказывалась почти вплотную к телу
-        // СЛЕДУЮЩЕГО этажа (при floorHeight=1.2 зазор был всего 0.2) —
-        // визуально казалось, что подпись "улетела"/принадлежит не тому
-        // голему. 0.75 плюс увеличенный floorHeight (см.
-        // TowerMinigameController) дают однозначный зазор.
+        // 1.0 → 1.3 → 1.5, теперь 1.8 — числа и примеры должны хорошо
+        // читаться на нарисованных фонах). yOffset считается от "ног"
+        // объекта (pivot внизу картинки): высота картинки + небольшой
+        // зазор (ArtSpecs.LabelGap) — подпись всегда стоит ровно над
+        // макушкой / верхом двери. Белый жирный текст с чёрной обводкой
+        // (отдельный материал, см. GetWorldLabelMaterial) читается и на
+        // светлом лугу, и на тёмной крепости; sortingOrder выше, чем у
+        // картинок, чтобы подпись никогда не пряталась за ними.
         private static TextMeshPro CreateWorldLabel(Transform parent, string name, float yOffset)
         {
             var go = new GameObject(name);
@@ -259,8 +325,11 @@ namespace MathGame.EditorTools
             go.transform.localPosition = new Vector3(0f, yOffset, 0f);
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 1.5f; // крупнее прежних 1.3 — числа и примеры должны хорошо читаться
+            tmp.fontSize = 1.8f;
+            tmp.fontStyle = FontStyles.Bold;
             tmp.text = "0";
+            tmp.fontSharedMaterial = GetWorldLabelMaterial(tmp.font);
+            tmp.sortingOrder = 10;
             return tmp;
         }
     }

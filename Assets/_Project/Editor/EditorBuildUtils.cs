@@ -48,6 +48,66 @@ namespace MathGame.EditorTools
             so.ApplyModifiedProperties();
         }
 
+        // Для массивов ссылок (например, список внешних видов гоблина).
+        public static void SetObjectArrayField(Object target, string fieldName, Object[] values)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(fieldName);
+            if (prop == null)
+            {
+                Debug.LogError($"Поле '{fieldName}' не найдено на {target.GetType().Name} — проверьте, не переименовалось ли оно в скрипте.");
+                return;
+            }
+            prop.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+                prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            so.ApplyModifiedProperties();
+        }
+
+        // Загружает нарисованную картинку как спрайт. Если файла нет или он
+        // ещё не импортирован как Sprite — возвращает null (вызывающий код
+        // сам решает, что показать вместо неё), и пишет понятное
+        // предупреждение, а не молча оставляет невидимый объект.
+        public static Sprite LoadArtSprite(string assetPath)
+        {
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+            if (sprite == null)
+                Debug.LogWarning($"Картинка '{assetPath}' не найдена или не импортирована как Sprite (попробуйте MathGame → Reimport Art). Вместо неё будет квадрат-заглушка.");
+            return sprite;
+        }
+
+        // Картинка или (если её нет) белый квадрат-заглушка — чтобы сборка
+        // префабов не падала и объект всё равно был виден.
+        public static Sprite LoadArtSpriteOrPlaceholder(string assetPath)
+        {
+            var sprite = LoadArtSprite(assetPath);
+            return sprite != null ? sprite : GetPlaceholderSprite();
+        }
+
+        private const string LabelMaterialPath = "Assets/_Project/Materials/WorldLabelOutline.mat";
+
+        // Материал для подписей над героем/гоблинами/дверьми: тот же шрифт,
+        // но с чёрной обводкой. Без неё белые цифры терялись на светлом небе
+        // и лугу (теперь у уровней нарисованные фоны, а не однотонная
+        // заливка). Это отдельный файл-материал в проекте, а не "копия на
+        // лету": копии материалов не сохраняются в префабе, а ссылка на
+        // файл — сохраняется.
+        public static Material GetWorldLabelMaterial(TMP_FontAsset font)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(LabelMaterialPath);
+            if (existing != null) return existing;
+
+            if (!AssetDatabase.IsValidFolder("Assets/_Project/Materials"))
+                AssetDatabase.CreateFolder("Assets/_Project", "Materials");
+
+            var material = new Material(font.material) { name = "WorldLabelOutline" };
+            material.EnableKeyword("OUTLINE_ON");
+            material.SetColor("_OutlineColor", Color.black);
+            material.SetFloat("_OutlineWidth", 0.22f);
+            AssetDatabase.CreateAsset(material, LabelMaterialPath);
+            return material;
+        }
+
         private const string PlaceholderSpritePath = "Assets/_Project/Art/PlaceholderSquare.png";
 
         // ВАЖНО: раньше здесь был Sprite.Create() из текстуры, созданной

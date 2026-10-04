@@ -39,8 +39,17 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private GolemView golemPrefab;
         [SerializeField] private Transform golemSlotParent;
         [SerializeField] private TextMeshPro heroPowerLabel;
-        [SerializeField] private float floorHeight = 2.2f;
-        [SerializeField] private float baseHeight = 1f;
+        // Расстояние по высоте между "ногами" соседних гоблинов. Гоблин
+        // высотой 1.7 (см. ArtSpecs.GoblinHeight) + подпись над головой
+        // (~0.5) должны поместиться между этажами и не наехать на ноги
+        // следующего: 1.7 + 0.5 + запас = 2.4.
+        [SerializeField] private float floorHeight = 2.4f;
+        // Подъём нижнего этажа над землёй. Раньше гоблины были квадратами с
+        // центром в позиции объекта, и нижний этаж поднимали на 1, чтобы он
+        // не оказался на одной высоте с героем. Теперь позиция объекта — это
+        // "ноги" (pivot внизу картинки), а башня стоит на той же земле, что
+        // и герой, поэтому подъём 0: нижний гоблин стоит на земле, как и герой.
+        [SerializeField] private float baseHeight = 0f;
         [SerializeField] private float towerSpacing = 5f;
         [SerializeField] private float moveDuration = 0.6f;
         [SerializeField] private float cameraOrthographicSize = 5.7f;
@@ -136,9 +145,8 @@ namespace MathGame.Minigames.Towers
             // укорачивается (см. PickTargets).
             for (int i = 0; i < targets.Count; i++)
             {
-                // baseHeight поднимает нижний этаж над головой героя — иначе
-                // этаж 0 оказывается на одной высоте с героем, и подпись
-                // силы героя накладывается на подпись первого примера.
+                // Позиция гоблина — его "ноги": этаж 0 стоит на земле
+                // (baseHeight), каждый следующий выше на floorHeight.
                 Vector3 pos = new Vector3(
                     towerX,
                     golemSlotParent.position.y + baseHeight + i * floorHeight,

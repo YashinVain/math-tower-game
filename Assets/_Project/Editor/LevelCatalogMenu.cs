@@ -104,21 +104,38 @@ namespace MathGame.EditorTools
             Debug.Log($"Готово: {LevelCount} уровней (Level_01..Level_{LevelCount:00}) и LevelCatalog собраны/обновлены.");
         }
 
-        // Плавный переход от светлой дневной темы (уровень 1) к тёмной
-        // (уровень 10) — по ТЗ нарастание сложности должно ощущаться и по
-        // картинке, не только по цифрам. darknessAmount доходит максимум до
-        // 0.7, а LevelThemeApplier ещё и делит его пополам при смешивании с
-        // чёрным — то есть даже на последнем уровне фон темнеет не больше
-        // чем на 35%, этого достаточно для настроения, но не мешает читать.
+        // По ТЗ нарастание сложности должно ощущаться и по картинке, не
+        // только по цифрам. Раньше для этого фон просто темнел, но
+        // персонажи нарисованы светлыми, и на тёмном фоне они выглядели бы
+        // вырезанными. Теперь у игры четыре нарисованных фона с одним и тем
+        // же дневным светом, а "страшнее" становится за счёт деталей: луг
+        // (уровни 1–2) → засохшая пустошь с первыми флагами гоблинов
+        // (3–5) → руины и лагерь гоблинов (6–8) → крепость гоблинов (9–10),
+        // см. ArtSpecs.BackgroundForLevel. Тонировку и затемнение поэтому
+        // отключаем (белый цвет, 0): картинка показывается как нарисована.
+        // Если картинки нет, останется прежний запасной вариант —
+        // затемнение цветом от светлого к тёмному.
         private static LevelVisualTheme BuildTheme(int levelIndex)
         {
             var theme = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Level{levelIndex + 1}.asset");
 
-            float t = (LevelCount > 1) ? levelIndex / (float)(LevelCount - 1) : 0f;
-            var brightTint = new Color(0.75f, 0.85f, 0.95f);
-            var darkTint = new Color(0.32f, 0.22f, 0.4f);
-            theme.ambientTint = Color.Lerp(brightTint, darkTint, t);
-            theme.darknessAmount = Mathf.Lerp(0f, 0.7f, t);
+            var background = EditorBuildUtils.LoadArtSprite(ArtSpecs.BackgroundForLevel(levelIndex));
+            theme.backgroundSprite = background;
+
+            if (background != null)
+            {
+                theme.ambientTint = Color.white;
+                theme.darknessAmount = 0f;
+            }
+            else
+            {
+                float t = (LevelCount > 1) ? levelIndex / (float)(LevelCount - 1) : 0f;
+                var brightTint = new Color(0.75f, 0.85f, 0.95f);
+                var darkTint = new Color(0.32f, 0.22f, 0.4f);
+                theme.ambientTint = Color.Lerp(brightTint, darkTint, t);
+                theme.darknessAmount = Mathf.Lerp(0f, 0.7f, t);
+            }
+
             EditorUtility.SetDirty(theme);
             return theme;
         }

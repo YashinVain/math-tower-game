@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TowerMinigame_04
   m_EditorClassIdentifier: Assembly-CSharp::MathGame.Data.TowerMinigameDefinition
   minigameId: 
-  controllerPrefab: {fileID: 2707591984373087948, guid: 179041378b32f09438d4114e2e7abc73, type: 3}
+  controllerPrefab: {fileID: 5618763384599295428, guid: 179041378b32f09438d4114e2e7abc73, type: 3}
   towerSizes: 020000000300000004000000
   heroStartingPower: 5
   powerPerWin: 1
