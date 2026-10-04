@@ -3,14 +3,40 @@
 Сейчас в игре вместо картинок цветные квадраты-заглушки. Здесь всё, что
 нужно сгенерировать нейросетью, чтобы я подключил графику в игру.
 
+**Готовые полные промпты для копирования — в `docs/ART_PROMPTS.txt`.**
+Этот файл — только объяснение «что и зачем».
+
+## Стиль: полуреалистичный фэнтези-арт, НЕ мультфильм
+
+Нейросети по умолчанию рисуют «мило и мультяшно» (плоская заливка, толстая
+обводка, большая голова, улыбка). Чтобы этого не было, в каждом промпте:
+
+- прямо называется нужный стиль: *semi-realistic fantasy game concept art,
+  detailed digital painting, realistic anatomy and proportions*;
+- перечислен список запретов: *NOT cartoon, NOT cute, NOT chibi, NOT anime,
+  NOT cel-shaded, NOT flat colors, NOT thick black outlines*;
+- враги описаны агрессивно (хмурый взгляд, оскал, сутулая боевая стойка);
+- для детской аудитории оставлено только «без крови и без ужасов».
+
+Если нейросеть всё равно рисует мультяшно — допишите в начало промпта
+`Realistic 3D character render, photorealistic materials,`.
+
+## Направление взгляда (важно!)
+
+- **Герой** стоит слева и смотрит **ВПРАВО**, вполоборота (три четверти).
+- **Враги (гоблины)** стоят справа и смотрят **ВЛЕВО**, тоже вполоборота.
+- Так они смотрят друг на друга, и в игре картинки не нужно зеркалить.
+- Двери — вид строго спереди.
+
 ## Общие правила
 
 - **Один стиль на всё.** Сначала сгенерируйте героя. Для остальных
-  картинок прикладывайте героя как образец стиля («same art style as the
-  attached image») — так игра не будет выглядеть набором разных рисунков.
+  картинок прикладывайте уже готовую картинку как образец стиля (это
+  прописано в промптах). Старую мультяшную картинку героя как образец
+  не прикладывайте — иначе стиль скопируется.
 - **Прозрачный фон.** Персонажи и иконки должны быть PNG с прозрачностью.
-  Многие нейросети честную прозрачность не дают — тогда просите
-  «on a solid flat pure white background», а фон потом убирайте
+  Многие нейросети честную прозрачность не дают — тогда просим
+  «on a solid flat pure white background», а фон потом убираем
   (remove.bg, Photoshop, Photopea и т.п.).
 - **Персонажи и двери — квадратные (1:1), 512×512.** Фигура занимает
   примерно 85% кадра, ноги/низ двери касаются нижнего края картинки
@@ -18,66 +44,57 @@
   не пришлось переделывать расстановку на экране: размеры в игре сейчас
   тоже квадратные.
 - **Фоны — 16:9, 2560×1440**, без текста и без важных деталей у самых краёв:
-  на окнах другой формы края могут немного обрезаться.
+  на окнах другой формы края могут немного обрезаться. Линия земли ровная,
+  в одном и том же месте на всех четырёх фонах.
 - Кладите файлы в `Assets/_Project/Art/` с точно такими именами, как ниже —
   тогда подключение не потребует гадать, что есть что.
 
-## Префикс стиля (вставляйте в начало каждого промпта)
-
-```
-cute friendly cartoon 2D game art for children, flat colors with soft
-outlines, simple shapes, bright cheerful palette, clean vector-like look,
-no text, no watermark
-```
-
-## Список файлов и промпты
+## Список файлов
 
 ### Персонажи — `Art/Characters/`
 
-| Файл | Промпт (после префикса стиля) |
+| Файл | Что это |
 |---|---|
-| `hero.png` | `a small brave young hero character, front view, standing pose, friendly face, simple cape, full body, centered, on a solid flat pure white background` |
-| `golem.png` | `a chunky friendly stone golem monster (ogre), front view, standing, big round fists, cute not scary, full body, centered, on a solid flat pure white background` |
+| `hero.png` | герой: юный воин, серьёзный взгляд, синий плащ, меч; смотрит вправо |
+| `goblin.png` | злой гоблин-воин (зелёная кожа, клыки, тесак); смотрит влево |
 
-По желанию: `golem_2.png`, `golem_3.png` — тот же голем в другом цвете
-(фиолетовый, зелёный, оранжевый), чтобы башни не были однообразными.
+По желанию: `goblin_2.png` (тёмный гоблин в красном, кинжал) и
+`goblin_3.png` (вожак в фиолетовом плаще, копьё) — чтобы башни не были
+однообразными.
 
 ### Двери — `Art/Doors/`
 
-| Файл | Промпт (после префикса стиля) |
+| Файл | Что это |
 |---|---|
-| `door_closed.png` | `a wooden arched dungeon door, closed, front view, metal hinges, centered, bottom of the door touches the bottom edge, on a solid flat pure white background` |
-| `door_open.png` | `the same wooden arched door, wide open, warm light glowing from inside, front view, same style as the attached image, on a solid flat pure white background` |
-| `door_locked.png` | `the same wooden arched door, closed with a big padlock and chains, front view, same style as the attached image, on a solid flat pure white background` |
+| `door_closed.png` | тяжёлая деревянная арочная дверь, закрыта |
+| `door_open.png` | та же дверь, открыта, изнутри золотой свет |
+| `door_locked.png` | та же дверь, закрыта на замок и цепи |
 
 ### Фоны уровней — `Art/Backgrounds/`
 
-Для всех: `wide 16:9 landscape, empty open ground in the lower third, sky
-above, no characters, no text, calm composition, soft gradients`
-
-| Файл | Где используется | Описание в промпте |
+| Файл | Где используется | Что на нём |
 |---|---|---|
-| `bg_day.png` | уровни 1–2 | `bright sunny day, blue sky, a few white clouds, green grass hills` |
-| `bg_sunset.png` | уровни 3–5 | `warm sunset, orange and pink sky, green-yellow hills` |
-| `bg_dusk.png` | уровни 6–8 | `purple evening sky, first stars, dark blue-green hills` |
-| `bg_night.png` | уровни 9–10 | `starry night, big moon, deep blue sky, dark teal hills, magical mood` |
+| `bg_day.png` | уровни 1–2 | ясный день, холмы, горы вдалеке |
+| `bg_sunset.png` | уровни 3–5 | закат, оранжево-красное небо |
+| `bg_dusk.png` | уровни 6–8 | фиолетовые сумерки, первые звёзды |
+| `bg_night.png` | уровни 9–10 | ночь, луна, магическое свечение |
 
 ### Меню и кнопки — `Art/UI/`
 
-| Файл | Размер | Промпт (после префикса стиля) |
+| Файл | Размер | Что это |
 |---|---|---|
-| `menu_background.png` | 2560×1440 | `a cheerful fantasy landscape with a tall friendly stone tower and a wooden door in the distance, empty center area for buttons, no text` |
-| `level_button_frame.png` | 256×256 | `a rounded square game button frame, wooden or stone with a light inner area, empty inside, on a solid flat pure white background` |
-| `icon_lock.png` | 256×256 | `a cute golden padlock icon, front view, on a solid flat pure white background` |
-| `icon_check.png` | 256×256 | `a bold green check mark icon in a round badge, on a solid flat pure white background` |
+| `menu_background.png` | 2560×1440 | старая башня вдали справа, центр пустой под кнопки |
+| `level_button_frame.png` | 256×256 | рамка кнопки (тёмное дерево и камень), внутри пусто |
+| `icon_lock.png` | 256×256 | старый кованый замок |
+| `icon_check.png` | 256×256 | золотая медаль с зелёной галочкой |
 
 ## Когда всё готово
 
 Напишите мне, что картинки лежат в `Assets/_Project/Art/`. Я:
 
 1. настрою импорт (спрайты, размер в игре, чтобы 512 px = 1 игровая единица);
-2. подключу их вместо квадратов (герой, големы, двери, фоны, кнопки уровней, меню);
+2. подключу их вместо квадратов (герой, гоблины, двери, фоны, кнопки уровней, меню);
 3. подгоню размеры и подписи над головами, чтобы ничего не наехало.
 
-Можно присылать частями — например, сначала героя, голема и дверь, фоны
+Можно присылать частями — например, сначала героя, гоблина и дверь, фоны
 позже.
