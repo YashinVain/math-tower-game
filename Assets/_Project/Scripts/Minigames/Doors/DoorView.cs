@@ -26,6 +26,13 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private Sprite lockedSprite;
         [SerializeField] private SpriteRenderer ambusherRenderer;
 
+        // Размер текста примера над дверью. Меньше, чем у гоблинов (4.5):
+        // четыре подписи стоят в ряд с шагом 2.05, и самый длинный пример
+        // (например "144 : 12 = x") при 3.4 занимает около 1.75 — ещё
+        // помещается, не наезжая на соседнюю дверь. Можно менять в
+        // Inspector (префаб Door), но не слишком сильно по этой причине.
+        [SerializeField] private float labelFontSize = 3.4f;
+
         private Action<DoorView> _onChosen;
 
         public int Answer { get; private set; }
@@ -33,6 +40,7 @@ namespace MathGame.Minigames.Doors
         public void Init(MathProblem problem, Action<DoorView> onChosen)
         {
             Answer = problem.Answer;
+            expressionLabel.fontSize = labelFontSize;
             expressionLabel.text = $"{problem.Expression} = x";
             _onChosen = onChosen;
         }

@@ -1,0 +1,128 @@
+ВТОРОЙ НАБОР ПРОМПТОВ: башня, фоны внутри замка, красивые кнопки и
+экран настроек
+
+Это продолжение файла ART_PROMPTS.txt (там герой, гоблины, двери, фоны на
+улице, меню и значки — всё это уже сделано и подключено). Правила те же:
+каждый промпт ниже полностью самодостаточный, копируйте один блок целиком
+(только текст под строкой с названием файла; строку "###" копировать не
+нужно, это подсказка, как назвать файл). Стиль везде один: аккуратный
+2D-мультфильм с чёткой обводкой и плоскими яркими цветами, без детской
+"милоты", без крови и ужасов.
+
+ЧТО ЗДЕСЬ:
+  16-18  башня из трёх блоков (нижний / средний / верхний этаж)
+  19-22  четыре фона внутри замка для уровней с дверями
+  23     красивая кнопка (для меню, "Назад", "Сбросить прогресс" и т.д.)
+  24     фон экрана настроек
+  25-28  по желанию: окно "Уровень пройден / Пауза", ползунок, галочка
+
+БАШНЯ (пункты 16-18): башня собирается из трёх одинаковых блоков:
+нижний этаж (с дверью), средний этаж и верхний этаж (с зубцами). Из них я
+соберу башню любой высоты (2, 3 или 4 этажа), и этажи точно совпадут с
+гоблинами; гоблины стоят ПЕРЕД башней на каменных площадках, башня рисуется
+позади них. Нейросеть считает этажи плохо, поэтому просим не "башню в 3
+этажа", а блоки. Сначала делайте tower_mid.png, остальные два делайте с ним
+как образцом (ширина стены, камень и площадка должны совпасть). Образцом
+можно приложить и готового гоблина (для стиля).
+
+ФОНЫ ДЛЯ ДВЕРЕЙ (пункты 19-22): уровни с дверями (2, 4, 6, 8, 10) проходят
+ВНУТРИ ЗАМКА, а не в поле. Те же правила, что у уличных фонов: яркий свет
+(без тёмных углов), одна и та же линия пола на всех фонах, середина над
+полом спокойная (там стоят двери). Нарастание "страшности" внутри замка:
+светлый королевский зал -> старый заброшенный зал -> логово гоблинов ->
+тронный зал короля гоблинов. Сначала делайте bg_castle_1_hall.png, остальные
+три делайте с ним как образцом. Уровни башен остаются на уличных фонах.
+
+КНОПКИ И НАСТРОЙКИ (пункты 23-28): кнопку (23) я использую как
+растягиваемую (9-slice): края и углы остаются как нарисованы, а середина
+тянется под любую ширину, поэтому середина должна быть простой. Для
+наведения мыши и нажатия кнопку я просто затемняю/осветляю, отдельные
+картинки состояний не нужны. Фон настроек (24) тёмный, потому что подписи
+и числа в настройках белые. Пункты 25-28 делайте, только если хотите
+довести красоту до конца.
+
+ФОРМАТЫ в вашем генераторе: фоны, кнопку и окно — "16:9 Широкий"; башню и
+мелкие значки — "1:1 Квадрат". Размеры в промптах указаны для справки,
+нейросеть может выдать другие, это нормально.
+
+Если нейросеть рисует мультяшно-детски: допишите в конец промпта
+"serious fantasy game style, bold outlines, flat cel shading". Если
+рисует текст на картинке: допишите "no text, no letters" в начало.
+
+
+
+### 16. tower_mid.png  (Assets/_Project/Art/Towers/tower_mid.png) — средний этаж башни, делать ПЕРВЫМ из трёх
+
+Stylized 2D cartoon game object art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: ONE MIDDLE FLOOR SEGMENT of a tall stone goblin watchtower, designed to be stacked vertically with identical copies to build a tower. Flat straight front view, no perspective, no angle. Square image, 1:1 aspect ratio, 1024x1024 pixels. The tower wall is centered and takes about 70% of the image width, with perfectly straight vertical left and right edges that run from the bottom edge to the top edge of the image, so that copies line up exactly when stacked. Rough grey stone bricks, plain and uncluttered in the middle (a character will stand in front of it), wooden support beams along the left and right edges, and a small tattered red cloth hanging in one upper corner. At the bottom of the image there is a flat protruding stone floor slab (a balcony ledge) about 8% of the image height thick and about 92% of the image width wide, with a flat top surface where a character can stand, touching the bottom edge of the image. Above the slab the wall continues straight up to the top edge of the image: no roof, no battlements, nothing cut diagonally. Plain solid flat pure white background, no ground, no cast shadow, no scenery, so the background can be removed easily. No characters, no text, no letters, no numbers, no watermark, no frame. If a reference image of a goblin is attached, use it only as a reference for the art style (outline thickness, shading, color style) and do not draw the goblin in this image.
+
+
+
+### 17. tower_base.png  (Assets/_Project/Art/Towers/tower_base.png) — нижний этаж башни (с дверью)
+
+Stylized 2D cartoon game object art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: the BOTTOM FLOOR SEGMENT of a tall stone goblin watchtower, designed so that identical middle segments can be stacked on top of it. Flat straight front view, no perspective, no angle. Square image, 1:1 aspect ratio, 1024x1024 pixels. The tower wall is centered and takes about 70% of the image width, with perfectly straight vertical left and right edges that run up to the top edge of the image. Rough grey stone bricks, wooden support beams along the left and right edges. In the center of the wall there is a closed arched wooden dungeon door with iron bands and a ring handle, about 45% of the image height tall, standing on the floor slab. At the bottom of the image there is the same flat protruding stone floor slab as on the middle segment (about 8% of the image height thick, about 92% of the image width wide, flat top surface), touching the bottom edge of the image. Above the door the wall continues straight up to the top edge of the image: no roof, no battlements. Plain solid flat pure white background, no ground, no cast shadow, no scenery, so the background can be removed easily. No characters, no text, no letters, no numbers, no watermark, no frame. If a reference image of the middle tower segment is attached, keep exactly the same wall width, brick style, colors, beams and floor slab, and only add the door.
+
+
+
+### 18. tower_top.png  (Assets/_Project/Art/Towers/tower_top.png) — верхний этаж башни (с зубцами)
+
+Stylized 2D cartoon game object art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: the TOP FLOOR SEGMENT of a tall stone goblin watchtower, designed to sit on top of identical middle segments. Flat straight front view, no perspective, no angle. Square image, 1:1 aspect ratio, 1024x1024 pixels. The tower wall is centered and takes about 70% of the image width, with perfectly straight vertical left and right edges. Rough grey stone bricks, plain and uncluttered in the middle (a character will stand in front of it), wooden support beams along the left and right edges. At the bottom of the image there is the same flat protruding stone floor slab as on the middle segment (about 8% of the image height thick, about 92% of the image width wide, flat top surface), touching the bottom edge of the image. At the top of the image there is a crenellated stone parapet (battlements), slightly wider than the wall, occupying the top 14% of the image, and a pole with a tattered red goblin banner rising from the top right corner, fully inside the image. Plain solid flat pure white background, no ground, no cast shadow, no scenery, so the background can be removed easily. No characters, no text, no letters, no numbers, no watermark, no frame. If a reference image of the middle tower segment is attached, keep exactly the same wall width, brick style, colors, beams and floor slab, and only add the battlements and the banner.
+
+
+
+### 19. bg_castle_1_hall.png  (Assets/_Project/Art/Backgrounds/bg_castle_1_hall.png) — двери, уровень 2, этап 1 из 4: светлый королевский зал, делать ПЕРВЫМ из четырёх
+
+Stylized 2D cartoon game background art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean shapes with soft gradients and simple cel shading, saturated but not neon palette, clean vector-like look, thin dark outlines only on foreground objects. NOT photorealistic, NOT 3D render, NOT childish. LIGHTING RULE: the whole interior is brightly and evenly lit, high brightness, NOT dark, NOT dim, NOT gloomy, no black corners, no dark vignette. Family-friendly: no blood, no gore, spooky but not horrifying. Scene INSIDE A CASTLE, stage 1 of 4 (peaceful and safe): a bright royal castle hall, clean light-grey stone block walls, tall arched windows with blue sky and warm sunlight shining in, a few blue and gold banners hanging high on the wall, neat stone pillars at the far left and far right edges, a tidy stone-slab floor with a long red carpet runner, calm friendly atmosphere with nothing threatening. The stone-slab floor occupies the lower third of the image where characters will stand. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. COMPOSITION: a perfectly flat horizontal line where the back wall meets the floor, at about one third of the image height from the bottom; the middle and right part of the back wall just above the floor (where four doors will be placed) stays calm, plain, uncluttered and low-contrast so that doors, characters and numbers are easy to read; decorations are placed high on the wall and at the left and right edges. No characters, no doors or gates in the middle, no text, no letters, no numbers, no watermark, no frame.
+
+
+
+### 20. bg_castle_2_neglected.png  (Assets/_Project/Art/Backgrounds/bg_castle_2_neglected.png) — двери, уровень 4, этап 2 из 4: старый заброшенный зал
+
+Stylized 2D cartoon game background art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean shapes with soft gradients and simple cel shading, saturated but not neon palette, clean vector-like look, thin dark outlines only on foreground objects. NOT photorealistic, NOT 3D render, NOT childish. LIGHTING RULE: the whole interior is brightly and evenly lit, high brightness, NOT dark, NOT dim, NOT gloomy, no black corners, no dark vignette. Family-friendly: no blood, no gore, spooky but not horrifying. Scene INSIDE A CASTLE, stage 2 of 4 (uneasy, something is wrong): the same castle hall, but old and neglected: cracked and mossy stone walls, bright shafts of daylight falling through holes in the ceiling and broken windows, cobwebs in the corners, torn faded banners, a broken stone pillar and scattered rubble at the far left and far right edges, ivy creeping on the walls, a cracked stone-slab floor with a worn torn carpet, and the first signs of goblins: crude scratches on the wall and one small tattered red cloth hanging high up. The stone-slab floor occupies the lower third of the image where characters will stand. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. COMPOSITION: a perfectly flat horizontal line where the back wall meets the floor, at about one third of the image height from the bottom; the middle and right part of the back wall just above the floor (where four doors will be placed) stays calm, plain, uncluttered and low-contrast so that doors, characters and numbers are easy to read; decorations are placed high on the wall and at the left and right edges. No characters, no doors or gates in the middle, no text, no letters, no numbers, no watermark, no frame. If a reference image of the stage-1 castle hall background is attached, keep the same art style, the same brightness, the same composition and exactly the same floor line position, and only change the scenery as described.
+
+
+
+### 21. bg_castle_3_lair.png  (Assets/_Project/Art/Backgrounds/bg_castle_3_lair.png) — двери, уровни 6 и 8, этап 3 из 4: логово гоблинов
+
+Stylized 2D cartoon game background art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean shapes with soft gradients and simple cel shading, saturated but not neon palette, clean vector-like look, thin dark outlines only on foreground objects. NOT photorealistic, NOT 3D render, NOT childish. LIGHTING RULE: the whole interior is brightly and evenly lit, high brightness, NOT dark, NOT dim, NOT gloomy, no black corners, no dark vignette (light comes from many burning torches and braziers). Family-friendly: no blood, no gore, spooky but not horrifying. Scene INSIDE A CASTLE, stage 3 of 4 (dangerous goblin lair): the castle hall has been taken over by goblins: rough dark stone walls, many burning torches on the walls, red goblin banners with a horned skull emblem, iron cages hanging from the ceiling, wooden racks with rusty swords and shields at the far left and far right edges, several animal skulls on wooden poles, crude spiked wooden barricades, a few bones and broken weapons on the stone-slab floor, a thin grey smoke haze near the ceiling. The stone-slab floor occupies the lower third of the image where characters will stand. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. COMPOSITION: a perfectly flat horizontal line where the back wall meets the floor, at about one third of the image height from the bottom; the middle and right part of the back wall just above the floor (where four doors will be placed) stays calm, plain, uncluttered and low-contrast so that doors, characters and numbers are easy to read; decorations are placed high on the wall and at the left and right edges. No characters, no doors or gates in the middle, no text, no letters, no numbers, no watermark, no frame. If a reference image of the stage-1 castle hall background is attached, keep the same art style, the same brightness, the same composition and exactly the same floor line position, and only change the scenery as described.
+
+
+
+### 22. bg_castle_4_throne.png  (Assets/_Project/Art/Backgrounds/bg_castle_4_throne.png) — двери, уровень 10, этап 4 из 4: тронный зал короля гоблинов, самое страшное
+
+Stylized 2D cartoon game background art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean shapes with soft gradients and simple cel shading, saturated but not neon palette, clean vector-like look, thin dark outlines only on foreground objects. NOT photorealistic, NOT 3D render, NOT childish. LIGHTING RULE: the whole interior is brightly and evenly lit, high brightness, NOT dark, NOT dim, NOT gloomy, no black corners, no dark vignette (light comes from big fire braziers and glowing magic). Family-friendly: no blood, no gore, spooky but not horrifying. Scene INSIDE A CASTLE, stage 4 of 4 (the goblin king throne hall, the most menacing stage): a huge dark spiked stone hall, a giant horned skull carved into the high back wall, tall pillars with iron spikes and chains, big fire braziers burning at the far left and far right edges, many red goblin banners with a horned skull emblem, a glowing purple magic swirl high above, glowing green slime pools in the corners, piles of bones, broken weapons and gold coins, thorny vines on the walls, a cracked stone-slab floor. The stone-slab floor occupies the lower third of the image where characters will stand. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. COMPOSITION: a perfectly flat horizontal line where the back wall meets the floor, at about one third of the image height from the bottom; the middle and right part of the back wall just above the floor (where four doors will be placed) stays calm, plain, uncluttered and low-contrast so that doors, characters and numbers are easy to read; decorations are placed high on the wall and at the left and right edges. No characters, no doors or gates in the middle, no text, no letters, no numbers, no watermark, no frame. If a reference image of the stage-1 castle hall background is attached, keep the same art style, the same brightness, the same composition and exactly the same floor line position, and only change the scenery as described.
+
+
+
+### 23. button_wide.png  (Assets/_Project/Art/UI/button_wide.png) — кнопка для всех экранов (формат 16:9)
+
+Stylized 2D cartoon game UI element art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: a wide horizontal game button plate made of dark brown carved wood with a rim of grey forged iron, iron rivets at the four corners and small grey stone caps on the left and right ends, slightly beveled. The middle section of the plate is plain dark wood grain with nothing on it, so that it can be stretched horizontally: all ornaments are only at the left end, the right end and the corners. The middle of the plate is completely empty, no text. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels; the button is centered and spans about 94% of the image width and about 42% of the image height (a plate with a 4:1 proportion). Plain solid flat pure white background outside the button, no cast shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the level button frame is attached, match its style, colors and materials exactly, and do not draw anything else from it.
+
+
+
+### 24. settings_background.png  (Assets/_Project/Art/UI/settings_background.png) — фон экрана настроек (формат 16:9)
+
+Stylized 2D cartoon game menu background art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, flat colors with soft gradients and simple cel shading, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT childish. Family-friendly. Scene: the inside of a castle room seen straight from the front: a muted grey stone brick wall in the background with a few burning torches and a couple of blue and gold banners at the far left and far right edges. In the center stands a huge ornate rectangular board made of dark brown wood with grey forged iron frame, iron corner brackets, rivets and small gold studs, covering about 88% of the image width and about 90% of the image height. The inner surface of the board is a plain, even, dark brown leather or parchment, completely empty, with no patterns, no stains and no decorations in the middle, because sliders, checkboxes and white text will be placed on it, so it must be dark and low-contrast. Wide landscape image, 16:9 aspect ratio, 2560x1440 pixels. No characters, no text, no letters, no numbers, no title, no watermark, no frame. If a reference image of the level button frame or the menu background is attached, match its art style and colors.
+
+
+
+### 25. dialog_panel.png  (Assets/_Project/Art/UI/dialog_panel.png) — по желанию: окно "Уровень пройден / Пауза / Сбросить прогресс?" (формат 3:2 или 16:9)
+
+Stylized 2D cartoon game UI element art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: a large ornate rectangular dialog window panel made of dark brown carved wood with a rim of grey forged iron, iron corner brackets with rivets and small gold studs, slightly beveled. The inner surface is a plain, even, dark brown leather or parchment, completely empty, with no patterns in the middle (text and buttons will be placed on it), so it must be dark and low-contrast. The ornaments are only at the corners and along the thin rim, so that the panel can be stretched. Landscape image, 3:2 aspect ratio; the panel is centered and fills about 94% of the image. Plain solid flat pure white background outside the panel, no cast shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark. If a reference image of the level button frame is attached, match its style, colors and materials exactly, and do not draw anything else from it.
+
+
+
+### 26. slider_knob.png  (Assets/_Project/Art/UI/slider_knob.png) — по желанию: ползунок настроек (формат 1:1)
+
+Stylized 2D cartoon game UI element art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: a round slider knob (handle): a golden-brass disc with a grey forged iron ring around it and a small red gem in the center, straight front view. Square image, 1:1 aspect ratio, 512x512 pixels; the knob is centered and fills about 85% of the image. Plain solid flat pure white background, no cast shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the check mark medal is attached, match its gold style exactly, and do not draw anything else from it.
+
+
+
+### 27. toggle_box.png  (Assets/_Project/Art/UI/toggle_box.png) — по желанию: пустая коробочка для галочки (формат 1:1)
+
+Stylized 2D cartoon game UI element art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: a small square checkbox frame made of dark brown wood with a grey forged iron rim and four iron corner studs, slightly beveled, with an empty plain dark brown inside. Straight front view. Square image, 1:1 aspect ratio, 512x512 pixels; the box is centered and fills about 90% of the image. Plain solid flat pure white background outside the box, no cast shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark. If a reference image of the level button frame is attached, match its style, colors and materials exactly, and do not draw anything else from it.
+
+
+
+### 28. toggle_check.png  (Assets/_Project/Art/UI/toggle_check.png) — по желанию: галочка внутри коробочки (формат 1:1)
+
+Stylized 2D cartoon game UI element art for a fantasy adventure game for ages 6 to 16, polished casual fantasy game illustration, clean medium-thick dark outlines, flat cel-shaded colors with simple soft shading and highlights, saturated but not neon palette, clean vector-like look. NOT photorealistic, NOT 3D render, NOT cute, NOT childish. Subject: a single bold bright green check mark with a thin dark outline and a soft highlight, simple and clearly readable at small size, with nothing around it: no box, no badge, no medal. Straight front view. Square image, 1:1 aspect ratio, 512x512 pixels; the check mark is centered and fills about 80% of the image. Plain solid flat pure white background, no cast shadow, so the background can be removed easily. No text, no letters, no numbers, no watermark, no frame. If a reference image of the check mark medal is attached, match the green color and style, but draw only the green check mark without the gold medal.

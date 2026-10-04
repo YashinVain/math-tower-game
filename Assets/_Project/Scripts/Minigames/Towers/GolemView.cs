@@ -23,6 +23,12 @@ namespace MathGame.Minigames.Towers
         // ArtImportSettings), поэтому подпись над головой стоит ровно.
         [SerializeField] private Sprite[] variants;
 
+        // Размер текста примера над головой (в "мировых" единицах TextMeshPro:
+        // 1.0 ≈ 0.1 единицы высоты в игровом мире). Задаётся здесь, а не
+        // только при сборке префаба, чтобы размер можно было поменять прямо в
+        // Inspector (выберите префаб Golem) без пересборки всего проекта.
+        [SerializeField] private float labelFontSize = 4.5f;
+
         private Action<GolemView> _onSelected;
 
         public int Answer { get; private set; }
@@ -30,6 +36,7 @@ namespace MathGame.Minigames.Towers
         public void Init(MathProblem problem, Action<GolemView> onSelected)
         {
             Answer = problem.Answer;
+            expressionLabel.fontSize = labelFontSize;
             expressionLabel.text = $"x = {problem.Expression}";
             _onSelected = onSelected;
 

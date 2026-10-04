@@ -51,6 +51,10 @@ namespace MathGame.Minigames.Towers
         // и герой, поэтому подъём 0: нижний гоблин стоит на земле, как и герой.
         [SerializeField] private float baseHeight = 0f;
         [SerializeField] private float towerSpacing = 5f;
+        // Размер числа силы героя над его головой — крупнее подписей у
+        // гоблинов (4.5): это главное число, по которому игрок выбирает, кого
+        // можно победить. Меняется в Inspector на префабе TowerMinigame.
+        [SerializeField] private float heroLabelFontSize = 6f;
         [SerializeField] private float moveDuration = 0.6f;
         [SerializeField] private float cameraOrthographicSize = 5.7f;
         // Насколько центр камеры должен быть ВЫШЕ героя по Y (не
@@ -87,6 +91,7 @@ namespace MathGame.Minigames.Towers
             _heroPower = _definition.heroStartingPower;
             _maxTowerSize = 2;
             foreach (int size in _definition.towerSizes) _maxTowerSize = Mathf.Max(_maxTowerSize, size);
+            if (heroPowerLabel != null) heroPowerLabel.fontSize = heroLabelFontSize;
             UpdateHeroLabel();
             ConfigureCamera();
             SpawnTower(0);

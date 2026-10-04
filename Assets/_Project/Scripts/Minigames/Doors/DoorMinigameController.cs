@@ -22,6 +22,11 @@ namespace MathGame.Minigames.Doors
         // высотой 2.0 (см. ArtSpecs.DoorHeight) имеет ширину около 1.76, так
         // что между дверьми остаётся небольшой просвет (2.05 − 1.76).
         [SerializeField] private float doorSpacing = 2.05f;
+        // Размер числа-цели над головой героя (то, что нужно получить в
+        // ответе у правильной двери) — самое важное число на экране, поэтому
+        // крупнее подписей у дверей (3.4). Меняется в Inspector на префабе
+        // DoorMinigame.
+        [SerializeField] private float heroLabelFontSize = 6f;
         // Обзор камеры теперь такой же, как в башнях (5.7 и 4.3): после
         // подключения настоящей графики герой и двери стали крупнее
         // прежних квадратов, а четырём дверям в ряд нужно больше места по
@@ -60,6 +65,7 @@ namespace MathGame.Minigames.Doors
             _definition = (DoorMinigameDefinition)definition;
             _context = context;
             _correctDoorsPassed = 0;
+            if (heroTargetLabel != null) heroTargetLabel.fontSize = heroLabelFontSize;
             ConfigureCamera();
             SpawnRound();
         }
