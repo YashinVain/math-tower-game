@@ -35,10 +35,24 @@ namespace MathGame.UI.Menu
         [SerializeField] private Button resetConfirmYesButton;
         [SerializeField] private Button resetConfirmNoButton;
 
+        // Четыре кнопки автонастройки под возраст (см. AgePresets).
+        [SerializeField] private Button age6to8Button;
+        [SerializeField] private Button age9to11Button;
+        [SerializeField] private Button age12to14Button;
+        [SerializeField] private Button age15to16Button;
+
+        private static readonly Color PresetNormalColor = new Color(1f, 1f, 1f, 0.9f);
+        private static readonly Color PresetSelectedColor = new Color(0.55f, 0.9f, 0.55f, 1f);
+
         private bool _isLoading;
 
         private void Awake()
         {
+            age6to8Button.onClick.AddListener(() => ApplyAgePreset(AgePreset.Age6to8));
+            age9to11Button.onClick.AddListener(() => ApplyAgePreset(AgePreset.Age9to11));
+            age12to14Button.onClick.AddListener(() => ApplyAgePreset(AgePreset.Age12to14));
+            age15to16Button.onClick.AddListener(() => ApplyAgePreset(AgePreset.Age15to16));
+
             numberMinSlider.onValueChanged.AddListener(_ => OnChanged());
             numberMaxSlider.onValueChanged.AddListener(_ => OnChanged());
             additionToggle.onValueChanged.AddListener(_ => OnOperationToggleChanged(additionToggle));
@@ -74,6 +88,7 @@ namespace MathGame.UI.Menu
             doorsEasyModeToggle.isOn = settings.doorsEasyModeEnabled;
 
             RefreshLabels(settings);
+            RefreshPresetHighlight(settings);
             _isLoading = false;
 
             // Защита на случай, если в сохранённом файле настроек как-то
@@ -157,6 +172,36 @@ namespace MathGame.UI.Menu
 
             GameServices.Instance.Settings.Save();
             RefreshLabels(settings);
+            RefreshPresetHighlight(settings);
+        }
+
+        // Выставляет сразу все настройки под выбранный возраст, сохраняет
+        // и перерисовывает экран по новым значениям (LoadFromService
+        // заново читает всё из тех же настроек — отдельно обновлять каждый
+        // слайдер и галочку здесь не нужно).
+        private void ApplyAgePreset(AgePreset preset)
+        {
+            var settings = GameServices.Instance.Settings.Current;
+            AgePresets.Apply(settings, preset);
+            GameServices.Instance.Settings.Save();
+            LoadFromService();
+        }
+
+        // Подсвечивает кнопку возраста, чьи значения сейчас в точности
+        // выставлены. Если игрок после выбора пресета что-то подвинул
+        // руками — подсветка пропадает: настройки уже "свои".
+        private void RefreshPresetHighlight(GameSettingsData settings)
+        {
+            SetPresetColor(age6to8Button, AgePresets.Matches(settings, AgePreset.Age6to8));
+            SetPresetColor(age9to11Button, AgePresets.Matches(settings, AgePreset.Age9to11));
+            SetPresetColor(age12to14Button, AgePresets.Matches(settings, AgePreset.Age12to14));
+            SetPresetColor(age15to16Button, AgePresets.Matches(settings, AgePreset.Age15to16));
+        }
+
+        private static void SetPresetColor(Button button, bool selected)
+        {
+            if (button.targetGraphic != null)
+                button.targetGraphic.color = selected ? PresetSelectedColor : PresetNormalColor;
         }
 
         private void RefreshLabels(GameSettingsData settings)

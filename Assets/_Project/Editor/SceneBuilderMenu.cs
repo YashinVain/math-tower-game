@@ -272,8 +272,24 @@ namespace MathGame.EditorTools
         {
             var panel = CreateFullScreenPanel(canvasTransform, "SettingsPanel");
 
-            float y = 0.90f;
-            const float step = 0.075f;
+            // Сверху — быстрая автонастройка под возраст (4 кнопки, см.
+            // AgePresets). Остальные ряды из-за этого начинаются чуть ниже
+            // и стоят чуть плотнее прежнего (0.064 вместо 0.075), чтобы всё
+            // по-прежнему помещалось над кнопками "Сбросить прогресс/Назад".
+            var agePresetsLabel = CreateLabel(panel, "AgePresetsLabel", "Возраст игрока (быстрая настройка):", 22, Color.white, 700, 34, TextAlignmentOptions.Center);
+            AnchorAt(agePresetsLabel.rectTransform, 0.5f, 0.945f, 700, 34);
+
+            var age6to8Button = CreateButton(panel, "Age6to8Button", "6–8 лет", 170, 52, 22);
+            AnchorAt(age6to8Button.GetComponent<RectTransform>(), 0.29f, 0.895f, 170, 52);
+            var age9to11Button = CreateButton(panel, "Age9to11Button", "9–11 лет", 170, 52, 22);
+            AnchorAt(age9to11Button.GetComponent<RectTransform>(), 0.43f, 0.895f, 170, 52);
+            var age12to14Button = CreateButton(panel, "Age12to14Button", "12–14 лет", 170, 52, 22);
+            AnchorAt(age12to14Button.GetComponent<RectTransform>(), 0.57f, 0.895f, 170, 52);
+            var age15to16Button = CreateButton(panel, "Age15to16Button", "15–16 лет", 170, 52, 22);
+            AnchorAt(age15to16Button.GetComponent<RectTransform>(), 0.71f, 0.895f, 170, 52);
+
+            float y = 0.815f;
+            const float step = 0.064f;
 
             // Верхняя граница слайдера "Мин. число" — ровно
             // GameSettingsData.MaxNumberRangeMin (2): выше поднять нельзя,
@@ -333,6 +349,10 @@ namespace MathGame.EditorTools
             SetField(settingsPanel, "timeLimitSlider", timeLimitSlider);
             SetField(settingsPanel, "timeLimitLabel", timeLimitLabel);
             SetField(settingsPanel, "doorsEasyModeToggle", doorsEasyModeToggle);
+            SetField(settingsPanel, "age6to8Button", age6to8Button);
+            SetField(settingsPanel, "age9to11Button", age9to11Button);
+            SetField(settingsPanel, "age12to14Button", age12to14Button);
+            SetField(settingsPanel, "age15to16Button", age15to16Button);
             SetField(settingsPanel, "resetProgressButton", resetProgressButton);
             SetField(settingsPanel, "resetConfirmRoot", confirmRoot.gameObject);
             SetField(settingsPanel, "resetConfirmYesButton", yesButton);

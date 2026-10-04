@@ -10,6 +10,17 @@ namespace MathGame.MathGen
     // никогда не уходит в минус, деление всегда подбирается без остатка.
     public class MathProblemGenerator : IMathProblemGenerator
     {
+        // Множители в умножении и делитель/частное в делении не больше 12 —
+        // это "таблица умножения", которую реально учат в школе. Без этого
+        // предела при диапазоне, например, 1..40 умножение выдавало бы
+        // "37 × 29", а деление — "1160 : 40", что для игры на скорость
+        // нечитаемо. Сложение и вычитание этим пределом не ограничены —
+        // для них диапазон чисел из настроек работает как раньше.
+        private const int MaxFactor = 12;
+
+        private static int FactorMax(DifficultyContext context) =>
+            Mathf.Max(context.MinValue, Mathf.Min(context.MaxValue, MaxFactor));
+
         public MathProblem Generate(DifficultyContext context)
         {
             switch (PickOperation(context.AllowedOperations))
@@ -22,16 +33,18 @@ namespace MathGame.MathGen
                 }
                 case MathOperation.Multiplication:
                 {
-                    int a = Random.Range(context.MinValue, context.MaxValue + 1);
-                    int b = Random.Range(context.MinValue, context.MaxValue + 1);
+                    int factorMax = FactorMax(context);
+                    int a = Random.Range(context.MinValue, factorMax + 1);
+                    int b = Random.Range(context.MinValue, factorMax + 1);
                     return new MathProblem($"{a} × {b}", a * b);
                 }
                 case MathOperation.Division:
                 {
                     // Строим "от ответа": делитель и частное сначала, делимое — их произведение.
                     // Так деление гарантированно без остатка.
-                    int divisor = Random.Range(Mathf.Max(1, context.MinValue), context.MaxValue + 1);
-                    int quotient = Random.Range(context.MinValue, context.MaxValue + 1);
+                    int factorMax = FactorMax(context);
+                    int divisor = Random.Range(Mathf.Max(1, context.MinValue), Mathf.Max(1, factorMax) + 1);
+                    int quotient = Random.Range(context.MinValue, factorMax + 1);
                     int dividend = divisor * quotient;
                     return new MathProblem($"{dividend} : {divisor}", quotient);
                 }
@@ -51,12 +64,15 @@ namespace MathGame.MathGen
                 case MathOperation.Subtraction:
                 {
                     // a - b = targetAnswer, и a, и b должны остаться в
-                    // [MinValue, MaxValue]. Раньше b подбирался в диапазоне,
-                    // а a = targetAnswer + b считался "как получится" — при
-                    // большом targetAnswer a мог вылезти далеко за MaxValue.
-                    // Теперь границы b считаются так, чтобы a гарантированно
-                    // остался в диапазоне тоже.
-                    if (TryBoundsForSum(context, targetAnswer, out int bLo, out int bHi))
+                    // [MinValue, MaxValue]. a = targetAnswer + b, поэтому
+                    // a ≤ MaxValue ⇔ b ≤ MaxValue − targetAnswer. (Раньше тут
+                    // стояли границы для СЛОЖЕНИЯ — для вычитания они неверны
+                    // и могли дать a далеко за MaxValue, например "27 − 13"
+                    // при диапазоне до 15; это не было заметно, пока
+                    // вычитание было выключено по умолчанию.)
+                    int bLo = context.MinValue;
+                    int bHi = context.MaxValue - targetAnswer;
+                    if (bLo <= bHi)
                     {
                         int b = Random.Range(bLo, bHi + 1);
                         int a = targetAnswer + b;
@@ -73,7 +89,14 @@ namespace MathGame.MathGen
                 }
                 case MathOperation.Division:
                 {
-                    int divisor = Random.Range(Mathf.Max(1, context.MinValue), context.MaxValue + 1);
+                    // Ответ (частное) тоже не больше MaxFactor — иначе
+                    // делимое вырастало бы до сотен ("480 : 16"). Для
+                    // больших целей просто покажем сложение (как и у
+                    // умножения, когда нет красивого множителя).
+                    int factorMax = FactorMax(context);
+                    if (targetAnswer > factorMax) goto default;
+
+                    int divisor = Random.Range(Mathf.Max(1, context.MinValue), Mathf.Max(1, factorMax) + 1);
                     int dividend = divisor * targetAnswer;
                     return new MathProblem($"{dividend} : {divisor}", targetAnswer);
                 }
@@ -128,15 +151,26 @@ namespace MathGame.MathGen
         {
             if (target <= 0) return 0;
             int lo = Mathf.Max(1, context.MinValue);
-            int hi = Mathf.Max(lo, context.MaxValue);
+            int hi = Mathf.Max(lo, FactorMax(context)); // не больше MaxFactor — таблица умножения
+
+            // Собираем ВСЕ подходящие множители и берём случайный — раньше
+            // брался наименьший, из-за чего почти любая цель превращалась
+            // в скучное "1 × цель". Множители, отличные от 1, предпочитаем
+            // (если они есть).
+            var any = new List<int>();
+            var nonTrivial = new List<int>();
             for (int factor = lo; factor <= hi; factor++)
             {
                 // Проверяем и сам множитель, и то, что получится во втором
                 // числе (target/factor) — второе раньше не проверялось
                 // вообще и тоже могло вылезти за диапазон.
-                if (target % factor == 0 && target / factor <= context.MaxValue) return factor;
+                if (target % factor != 0 || target / factor > hi) continue;
+                any.Add(factor);
+                if (factor > 1 && target / factor > 1) nonTrivial.Add(factor);
             }
-            return 0;
+
+            var pool = nonTrivial.Count > 0 ? nonTrivial : any;
+            return pool.Count > 0 ? pool[Random.Range(0, pool.Count)] : 0;
         }
 
         private static MathOperation PickOperation(MathOperation allowed)
