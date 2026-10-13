@@ -26,12 +26,18 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private Sprite lockedSprite;
         [SerializeField] private SpriteRenderer ambusherRenderer;
 
-        // Размер текста примера над дверью. Меньше, чем у гоблинов (4.5):
-        // четыре подписи стоят в ряд с шагом 2.05, и самый длинный пример
-        // (например "144 : 12 = x") при 3.4 занимает около 1.75 — ещё
-        // помещается, не наезжая на соседнюю дверь. Можно менять в
+        // Размер текста примера над дверью. Чуть меньше, чем у гоблинов
+        // (4.5): четыре подписи стоят в ряд с шагом до 2.7, и самый длинный
+        // пример (например "144 : 12 = x") при 4.0 занимает около 2.1 —
+        // ещё помещается, не наезжая на соседнюю дверь. Можно менять в
         // Inspector (префаб Door), но не слишком сильно по этой причине.
-        [SerializeField] private float labelFontSize = 3.4f;
+        [SerializeField] private float labelFontSize = 4f;
+        // Зазор между верхом двери и подписью над ней.
+        [SerializeField] private float labelGap = 0.3f;
+        // Во сколько раз гоблин-засада крупнее своего обычного размера:
+        // дверь стала высокой (2.8), и гоблин высотой 1.7 терялся бы в
+        // проёме.
+        [SerializeField] private float ambusherScale = 1.25f;
 
         private Action<DoorView> _onChosen;
 
@@ -43,6 +49,28 @@ namespace MathGame.Minigames.Doors
             expressionLabel.fontSize = labelFontSize;
             expressionLabel.text = $"{problem.Expression} = x";
             _onChosen = onChosen;
+
+            FitToSprite();
+        }
+
+        // Кликабельная область и подпись подгоняются под РЕАЛЬНЫЙ размер
+        // картинки двери, а не под число, запомненное при сборке префаба.
+        // Тогда размер двери можно менять (ArtSpecs.DoorHeight), не
+        // пересобирая префаб: коллайдер и подпись всегда совпадут с картинкой.
+        private void FitToSprite()
+        {
+            if (doorRenderer == null || doorRenderer.sprite == null) return;
+
+            Bounds bounds = doorRenderer.sprite.bounds;
+
+            var box = GetComponent<BoxCollider2D>();
+            if (box != null)
+            {
+                box.size = bounds.size;
+                box.offset = bounds.center;
+            }
+
+            expressionLabel.transform.localPosition = new Vector3(0f, bounds.max.y + labelGap, 0f);
         }
 
         private void OnMouseDown()
@@ -108,7 +136,7 @@ namespace MathGame.Minigames.Doors
                 var ambusher = ambusherRenderer.transform;
                 ambusher.localScale = Vector3.zero;
                 ambusherRenderer.gameObject.SetActive(true);
-                yield return SimpleTween.ScaleTo(ambusher, Vector3.one, 0.25f);
+                yield return SimpleTween.ScaleTo(ambusher, Vector3.one * ambusherScale, 0.25f);
             }
             yield return SimpleTween.Wait(0.6f);
             onComplete?.Invoke();

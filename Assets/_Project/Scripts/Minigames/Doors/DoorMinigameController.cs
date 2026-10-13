@@ -18,13 +18,25 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private TextMeshPro heroTargetLabel;
         [SerializeField] private DoorView doorPrefab;
         [SerializeField] private Transform doorsParent;
-        // Расстояние между центрами соседних дверей. Дверь с картинкой
-        // высотой 2.0 (см. ArtSpecs.DoorHeight) имеет ширину около 1.76, так
-        // что между дверьми остаётся небольшой просвет (2.05 − 1.76).
-        [SerializeField] private float doorSpacing = 2.05f;
+        // НАИБОЛЬШЕЕ расстояние между центрами соседних дверей (на широком
+        // окне). Дверь с картинкой высотой 2.8 (см. ArtSpecs.DoorHeight)
+        // имеет ширину около 2.46, так что между дверьми остаётся небольшой
+        // просвет (2.7 − 2.46). Если окно узкое и четыре двери в таком
+        // размере не помещаются между героем и правым краем экрана, шаг
+        // уменьшается, а вместе с ним — и сами двери (см. ConfigureCamera,
+        // _doorFit): так двери всегда помещаются и не наезжают на героя.
+        // (Поле называлось doorSpacing; новое имя нужно, чтобы уже
+        // собранный префаб не тащил старое значение 2.05.)
+        [SerializeField] private float maxDoorSpacing = 2.7f;
+        // Сколько свободного места (в мировых единицах) оставить между героем
+        // и первой дверью, считая от центра героя: полширины героя (~0.5) и
+        // запас.
+        [SerializeField] private float clearanceFromHero = 1.4f;
+        // Доля ширины экрана, которую оставляем пустой у правого края.
+        [SerializeField] private float rightMarginFraction = 0.04f;
         // Размер числа-цели над головой героя (то, что нужно получить в
         // ответе у правильной двери) — самое важное число на экране, поэтому
-        // крупнее подписей у дверей (3.4). Меняется в Inspector на префабе
+        // крупнее подписей у дверей (4.0). Меняется в Inspector на префабе
         // DoorMinigame.
         [SerializeField] private float heroLabelFontSize = 6f;
         // Обзор камеры теперь такой же, как в башнях (5.7 и 4.3): после
@@ -59,6 +71,8 @@ namespace MathGame.Minigames.Doors
         private int _heroTargetNumber;
         private int _correctDoorsPassed;
         private bool _inputLocked;
+        private float _doorPitch;      // реальный шаг между дверьми на этом окне
+        private float _doorFit = 1f;   // во сколько раз уменьшены двери (1 = полный размер)
 
         public override void Begin(MinigameDefinition definition, MinigameRuntimeContext context)
         {
@@ -90,9 +104,28 @@ namespace MathGame.Minigames.Doors
             if (follow != null)
                 follow.SetOffsetX(ScreenLayout.OffsetXForHeroFraction(halfWidth, heroScreenFraction));
 
+            // Сколько места реально есть для ряда дверей: от героя (с
+            // запасом) до правого края экрана (тоже с запасом). Герой стоит
+            // на доле heroScreenFraction ширины экрана от левого края, значит
+            // левый край экрана — на heroScreenFraction*ширины левее героя.
+            float viewWidth = 2f * halfWidth;
+            float cameraLeft = hero.position.x - heroScreenFraction * viewWidth;
+            float zoneLeft = hero.position.x + clearanceFromHero;
+            float zoneRight = cameraLeft + viewWidth * (1f - rightMarginFraction);
+
+            int doorCount = Mathf.Max(2, _definition.doorsPerRound);
+            _doorPitch = Mathf.Min(maxDoorSpacing, (zoneRight - zoneLeft) / doorCount);
+            _doorFit = _doorPitch / maxDoorSpacing;
+
+            // Центр ряда — на привычной доле экрана, но не дальше, чем нужно,
+            // чтобы весь ряд поместился в зону между героем и краем.
+            float groupWidth = _doorPitch * doorCount;
             float heroToDoorsDistance = ScreenLayout.DistanceForTargetFraction(halfWidth, heroScreenFraction, doorsScreenFraction);
+            float center = Mathf.Clamp(hero.position.x + heroToDoorsDistance,
+                zoneLeft + groupWidth * 0.5f, zoneRight - groupWidth * 0.5f);
+
             var doorsPos = doorsParent.position;
-            doorsPos.x = hero.position.x + heroToDoorsDistance;
+            doorsPos.x = center;
             doorsParent.position = doorsPos;
         }
 
@@ -113,7 +146,7 @@ namespace MathGame.Minigames.Doors
             int correctSlot = Random.Range(0, doorCount);
             var usedAnswers = new HashSet<int> { _heroTargetNumber };
 
-            float startX = doorsParent.position.x - doorSpacing * (doorCount - 1) * 0.5f;
+            float startX = doorsParent.position.x - _doorPitch * (doorCount - 1) * 0.5f;
 
             for (int i = 0; i < doorCount; i++)
             {
@@ -128,8 +161,11 @@ namespace MathGame.Minigames.Doors
                     usedAnswers.Add(problem.Answer);
                 }
 
-                Vector3 pos = new Vector3(startX + i * doorSpacing, doorsParent.position.y, doorsParent.position.z);
+                Vector3 pos = new Vector3(startX + i * _doorPitch, doorsParent.position.y, doorsParent.position.z);
                 var door = Instantiate(doorPrefab, pos, Quaternion.identity, doorsParent);
+                // На узком окне двери уменьшаются вместе с шагом (подпись над
+                // дверью — её ребёнок, поэтому уменьшается тоже).
+                door.transform.localScale = Vector3.one * _doorFit;
                 door.Init(problem, OnDoorChosen);
                 _activeDoors.Add(door);
             }

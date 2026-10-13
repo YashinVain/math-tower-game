@@ -52,7 +52,10 @@ namespace MathGame.EditorTools
         // Высота в мире, юниты.
         public const float HeroHeight = 1.9f;
         public const float GoblinHeight = 1.7f;
-        public const float DoorHeight = 2.0f;
+        // Дверь заметно выше героя (1.9) — как настоящая дверь в замке. Ширина
+        // получается около 2.46. На узких окнах DoorMinigameController
+        // автоматически уменьшает двери, чтобы все четыре помещались.
+        public const float DoorHeight = 2.8f;
 
         // Зазор между макушкой/верхом двери и подписью над ней.
         public const float LabelGap = 0.3f;
@@ -106,7 +109,7 @@ namespace MathGame.EditorTools
     {
         // Меняйте номер, когда меняете правила/числа выше: Unity
         // переимпортирует все картинки заново и применит новые настройки.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private void OnPreprocessTexture()
         {
