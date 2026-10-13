@@ -16,6 +16,8 @@ namespace MathGame.UI.Menu
         public void Setup(LevelDefinition level, int displayNumber, LevelState state, Action onClick)
         {
             numberLabel.text = displayNumber.ToString();
+            // У закрытого уровня номера не видно: поверх рамки только замок.
+            numberLabel.gameObject.SetActive(state != LevelState.Locked);
 
             lockIcon.SetActive(state == LevelState.Locked);
             completedIcon.SetActive(state == LevelState.Completed);

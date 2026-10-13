@@ -281,8 +281,10 @@ namespace MathGame.EditorTools
             StretchFull(numberRect);
             var numberLabel = numberRect.gameObject.AddComponent<TextMeshProUGUI>();
             numberLabel.text = "1";
-            numberLabel.fontSize = 64;
-            numberLabel.fontStyle = FontStyles.Bold;
+            numberLabel.fontSize = 72;
+            var numberFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(LabelFontBuilder.UiFontAssetPath);
+            if (numberFont != null) numberLabel.font = numberFont; // тот же шрифт, что на кнопках
+            else numberLabel.fontStyle = FontStyles.Bold;
             // Светлый цвет: внутри рамки тёмный "пергамент".
             numberLabel.color = new Color(0.98f, 0.92f, 0.75f);
             numberLabel.alignment = TextAlignmentOptions.Center;

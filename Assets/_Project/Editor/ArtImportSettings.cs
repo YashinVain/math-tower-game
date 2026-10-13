@@ -73,6 +73,14 @@ namespace MathGame.EditorTools
         public const string LevelButtonFrame = UIFolder + "level_button_frame.png";
         public const string IconLock = UIFolder + "icon_lock.png";
         public const string IconCheck = UIFolder + "icon_check.png";
+        public const string IconTick = UIFolder + "icon_tick.png"; // галочка для коробочек настроек
+
+        // Слайдер: дорожка и заливка — "таблетки" для 9-slice (скругление по
+        // краям 18 px), бегунок — золотой кружок. Рисует Tools/MakeUiArt.ps1.
+        public const string SliderTrack = UIFolder + "slider_track.png";
+        public const string SliderFill = UIFolder + "slider_fill.png";
+        public const string SliderKnob = UIFolder + "slider_knob.png";
+        public const float SliderBarCornerPx = 18f;
 
         // Растягиваемые детали интерфейса, собранные из рамки уровня
         // (Tools/MakeUiArt.ps1): широкая кнопка и доска для окон. У обеих
@@ -173,7 +181,7 @@ namespace MathGame.EditorTools
     {
         // Меняйте номер, когда меняете правила/числа выше: Unity
         // переимпортирует все картинки заново и применит новые настройки.
-        public override uint GetVersion() => 6;
+        public override uint GetVersion() => 8;
 
         private void OnPreprocessTexture()
         {
@@ -215,6 +223,12 @@ namespace MathGame.EditorTools
             if (assetPath == ArtSpecs.ButtonWide || assetPath == ArtSpecs.PanelBoard)
             {
                 float b = ArtSpecs.SlicedCornerPx;
+                importer.spriteBorder = new Vector4(b, b, b, b);
+            }
+            // ... и для дорожки и заливки слайдера (скруглённые концы).
+            else if (assetPath == ArtSpecs.SliderTrack || assetPath == ArtSpecs.SliderFill)
+            {
+                float b = ArtSpecs.SliderBarCornerPx;
                 importer.spriteBorder = new Vector4(b, b, b, b);
             }
         }

@@ -323,10 +323,16 @@ namespace MathGame.EditorTools
             var rect = CreateUIObject(name, parent);
             rect.sizeDelta = new Vector2(width, height);
 
-            // Дорожка тёмного дерева, заливка золотая, ползунок — золотой
-            // кружок (встроенный круглый спрайт Unity, закрашенный в золото).
+            // Дорожка тёмного дерева, заливка золотая, бегунок — золотой кружок:
+            // всё нарисовано (Tools/MakeUiArt.ps1); если картинок ещё нет —
+            // простые цветные прямоугольники.
+            var trackSprite = LoadArtSprite(ArtSpecs.SliderTrack);
+            var fillSprite = LoadArtSprite(ArtSpecs.SliderFill);
+            var knobSprite = LoadArtSprite(ArtSpecs.SliderKnob);
+
             var bg = rect.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.1f, 0.06f, 0.03f);
+            if (trackSprite != null) { bg.sprite = trackSprite; bg.type = Image.Type.Sliced; bg.color = Color.white; }
+            else bg.color = new Color(0.1f, 0.06f, 0.03f);
 
             var fillAreaRect = CreateUIObject("FillArea", rect);
             StretchFull(fillAreaRect);
@@ -337,13 +343,18 @@ namespace MathGame.EditorTools
             fillRect.offsetMin = Vector2.zero;
             fillRect.offsetMax = Vector2.zero;
             var fillImage = fillRect.gameObject.AddComponent<Image>();
-            fillImage.color = new Color(0.96f, 0.76f, 0.24f);
+            if (fillSprite != null) { fillImage.sprite = fillSprite; fillImage.type = Image.Type.Sliced; fillImage.color = Color.white; }
+            else fillImage.color = new Color(0.96f, 0.76f, 0.24f);
 
             var handleRect = CreateUIObject("Handle", rect);
-            handleRect.sizeDelta = new Vector2(height + 14, height + 14);
+            handleRect.sizeDelta = new Vector2(height * 1.9f, height * 1.9f);
             var handleImage = handleRect.gameObject.AddComponent<Image>();
-            handleImage.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
-            handleImage.color = new Color(1f, 0.88f, 0.55f);
+            if (knobSprite != null) { handleImage.sprite = knobSprite; handleImage.color = Color.white; }
+            else
+            {
+                handleImage.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+                handleImage.color = new Color(1f, 0.88f, 0.55f);
+            }
 
             var slider = rect.gameObject.AddComponent<Slider>();
             slider.fillRect = fillRect;
@@ -362,9 +373,9 @@ namespace MathGame.EditorTools
             rect.sizeDelta = new Vector2(boxSize, boxSize);
 
             // Коробочка — та же рамка, что у кнопок уровней, а "включено" —
-            // золотая медаль с зелёной галочкой (картинки из набора значков).
+            // зелёная галочка поверх неё.
             var frameSprite = LoadArtSprite(ArtSpecs.LevelButtonFrame);
-            var checkSprite = LoadArtSprite(ArtSpecs.IconCheck);
+            var checkSprite = LoadArtSprite(ArtSpecs.IconTick);
 
             var bg = rect.gameObject.AddComponent<Image>();
             bg.sprite = frameSprite;
@@ -373,8 +384,8 @@ namespace MathGame.EditorTools
 
             var checkRect = CreateUIObject("Checkmark", rect);
             StretchFull(checkRect);
-            checkRect.offsetMin = new Vector2(-4, -4);
-            checkRect.offsetMax = new Vector2(4, 4);
+            checkRect.offsetMin = new Vector2(6, 6);
+            checkRect.offsetMax = new Vector2(-6, -6);
             var check = checkRect.gameObject.AddComponent<Image>();
             check.sprite = checkSprite;
             check.preserveAspect = true;
