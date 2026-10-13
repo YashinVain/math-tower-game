@@ -388,33 +388,44 @@ namespace MathGame.EditorTools
             return toggle;
         }
 
-        // Одна строка "подпись + слайдер + число" в настройках — все три
-        // элемента независимо закреплены по вертикальной доле экрана
-        // (yAnchor), с разными фиксированными горизонтальными долями, а не
-        // вложены в общий контейнер со своей раскладкой.
-        public static (Slider slider, TextMeshProUGUI valueLabel) CreateSliderRow(Transform parent, string rowName, string labelText, float min, float max, float value, float yAnchor)
+        // ---- Раскладка экрана настроек ----
+        // Все позиции — в пикселях от ЦЕНТРА экрана (холст 1920×1080, y вверх).
+        // Единая левая колонка: и подписи слайдеров, и галочки стоят у одного
+        // левого края, а подпись галочки идёт сразу за ней (раньше галочка и
+        // текст были далеко друг от друга).
+        public const float SettingsLeftEdge = -610f;
+        public static readonly Color SettingsTextColor = new Color(1f, 0.93f, 0.75f);
+        public static readonly Color SettingsValueColor = new Color(1f, 0.82f, 0.3f);
+
+        // Ряд "подпись — слайдер — значение".
+        public static (Slider slider, TextMeshProUGUI valueLabel) CreateSliderRow(Transform parent, string rowName, string labelText, float min, float max, float value, float y)
         {
-            var label = CreateLabel(parent, rowName + "_Label", labelText, 26, Color.white, 380, 40, TextAlignmentOptions.MidlineRight);
-            AnchorAt(label.rectTransform, 0.32f, yAnchor, 380, 40);
+            var label = CreateLabel(parent, rowName + "_Label", labelText, 32, SettingsTextColor, 400, 50, TextAlignmentOptions.MidlineLeft);
+            AnchorAt(label.rectTransform, 0.5f, 0.5f, 400, 50, SettingsLeftEdge + 200f, y);
 
-            var slider = CreateSlider(parent, rowName + "_Slider", min, max, value, 260, 20);
-            AnchorAt(slider.GetComponent<RectTransform>(), 0.55f, yAnchor, 260, 20);
+            var slider = CreateSlider(parent, rowName + "_Slider", min, max, value, 400, 26);
+            AnchorAt(slider.GetComponent<RectTransform>(), 0.5f, 0.5f, 400, 26, 30f, y);
 
-            var valueLabel = CreateLabel(parent, rowName + "_Value", value.ToString("0.##"), 26, new Color(1f, 0.88f, 0.55f), 150, 40, TextAlignmentOptions.MidlineLeft);
-            AnchorAt(valueLabel.rectTransform, 0.75f, yAnchor, 150, 40);
+            var valueLabel = CreateLabel(parent, rowName + "_Value", value.ToString("0.##"), 34, SettingsValueColor, 330, 50, TextAlignmentOptions.MidlineLeft);
+            valueLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            AnchorAt(valueLabel.rectTransform, 0.5f, 0.5f, 330, 50, 290f + 165f, y);
 
             return (slider, valueLabel);
         }
 
-        public static (Toggle toggle, TextMeshProUGUI label) CreateToggleRow(Transform parent, string rowName, string labelText, bool isOn, float yAnchor)
+        // Галочка и сразу за ней подпись. x — центр галочки (в пикселях от центра).
+        public static (Toggle toggle, TextMeshProUGUI label) CreateToggleRow(Transform parent, string rowName, string labelText, bool isOn, float x, float y, float labelWidth = 260f)
         {
-            var toggle = CreateToggle(parent, rowName + "_Toggle", isOn);
-            AnchorAt(toggle.GetComponent<RectTransform>(), 0.30f, yAnchor, 44, 44);
+            const float box = 60f;
+            var toggle = CreateToggle(parent, rowName + "_Toggle", isOn, box);
+            AnchorAt(toggle.GetComponent<RectTransform>(), 0.5f, 0.5f, box, box, x, y);
 
-            var label = CreateLabel(parent, rowName + "_Label", labelText, 26, Color.white, 360, 36, TextAlignmentOptions.MidlineLeft);
-            AnchorAt(label.rectTransform, 0.48f, yAnchor, 360, 36);
+            var label = CreateLabel(parent, rowName + "_Label", labelText, 32, SettingsTextColor, labelWidth, 50, TextAlignmentOptions.MidlineLeft);
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            AnchorAt(label.rectTransform, 0.5f, 0.5f, labelWidth, 50, x + box * 0.5f + 16f + labelWidth * 0.5f, y);
 
             return (toggle, label);
         }
+
     }
 }

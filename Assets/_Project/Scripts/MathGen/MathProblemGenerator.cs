@@ -57,82 +57,105 @@ namespace MathGame.MathGen
             }
         }
 
+        // Всегда возвращает пример, ответ которого РОВНО targetAnswer. Раньше,
+        // если выбранное действие не могло дать нужный ответ в заданном
+        // диапазоне (например, 1 нельзя получить сложением двух чисел от 1
+        // до 15), метод молча возвращал "1 + 1" = 2 — и на уровне с дверями
+        // не оставалось ни одной правильной двери. Теперь действия
+        // перебираются в случайном порядке, пока одно из них не подойдёт.
         public MathProblem GenerateWithAnswer(DifficultyContext context, int targetAnswer)
         {
-            switch (PickOperation(context.AllowedOperations))
+            var operations = AllowedOperationList(context.AllowedOperations);
+
+            // Случайный порядок (тасование), чтобы примеры по-прежнему были разнообразными.
+            for (int i = operations.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (operations[i], operations[j]) = (operations[j], operations[i]);
+            }
+
+            foreach (var operation in operations)
+            {
+                if (TryBuildWithAnswer(operation, context, targetAnswer, out var problem)) return problem;
+            }
+
+            // Ни одно действие не уложилось в диапазон (например, цель 1 при
+            // разрешённом только сложении и числах от 1). Верный ответ важнее
+            // красивого диапазона: ноль не ломает пример.
+            return new MathProblem($"{targetAnswer} + 0", targetAnswer);
+        }
+
+        private static bool TryBuildWithAnswer(MathOperation operation, DifficultyContext context, int targetAnswer, out MathProblem problem)
+        {
+            switch (operation)
             {
                 case MathOperation.Subtraction:
                 {
                     // a - b = targetAnswer, и a, и b должны остаться в
                     // [MinValue, MaxValue]. a = targetAnswer + b, поэтому
-                    // a ≤ MaxValue ⇔ b ≤ MaxValue − targetAnswer. (Раньше тут
-                    // стояли границы для СЛОЖЕНИЯ — для вычитания они неверны
-                    // и могли дать a далеко за MaxValue, например "27 − 13"
-                    // при диапазоне до 15; это не было заметно, пока
-                    // вычитание было выключено по умолчанию.)
+                    // a ≤ MaxValue ⇔ b ≤ MaxValue − targetAnswer.
                     int bLo = context.MinValue;
                     int bHi = context.MaxValue - targetAnswer;
                     if (bLo <= bHi)
                     {
                         int b = Random.Range(bLo, bHi + 1);
                         int a = targetAnswer + b;
-                        return new MathProblem($"{a} - {b}", targetAnswer);
+                        problem = new MathProblem($"{a} - {b}", targetAnswer);
+                        return true;
                     }
-                    goto default;
+                    break;
                 }
                 case MathOperation.Multiplication:
                 {
                     int factor = FindFactorWithinRange(targetAnswer, context);
                     if (factor > 0)
-                        return new MathProblem($"{factor} × {targetAnswer / factor}", targetAnswer);
-                    goto default; // не нашли красивый множитель — не страшно, покажем как сложение
+                    {
+                        problem = new MathProblem($"{factor} × {targetAnswer / factor}", targetAnswer);
+                        return true;
+                    }
+                    break;
                 }
                 case MathOperation.Division:
                 {
                     // Ответ (частное) тоже не больше MaxFactor — иначе
-                    // делимое вырастало бы до сотен ("480 : 16"). Для
-                    // больших целей просто покажем сложение (как и у
-                    // умножения, когда нет красивого множителя).
+                    // делимое вырастало бы до сотен ("480 : 16").
                     int factorMax = FactorMax(context);
-                    if (targetAnswer > factorMax) goto default;
-
-                    int divisor = Random.Range(Mathf.Max(1, context.MinValue), Mathf.Max(1, factorMax) + 1);
-                    int dividend = divisor * targetAnswer;
-                    return new MathProblem($"{dividend} : {divisor}", targetAnswer);
+                    if (targetAnswer >= context.MinValue && targetAnswer <= factorMax)
+                    {
+                        int divisor = Random.Range(Mathf.Max(1, context.MinValue), Mathf.Max(1, factorMax) + 1);
+                        problem = new MathProblem($"{divisor * targetAnswer} : {divisor}", targetAnswer);
+                        return true;
+                    }
+                    break;
                 }
                 default:
                 {
                     // a + b = targetAnswer, и a, и b должны остаться в
-                    // [MinValue, MaxValue]. Раньше проверялось только a
-                    // (через Mathf.Max(aMin, ...), который на самом деле
-                    // просто ИГНОРИРОВАЛ верхнюю границу, когда targetAnswer
-                    // был большим) — а всё "лишнее" молча утекало в b без
-                    // всякой проверки. Отсюда примеры вроде "11 + 6" при
-                    // настройках "числа от 0 до 6": 11 просто никто не
-                    // проверял. TryBoundsForSum считает ПЕРЕСЕЧЕНИЕ условий
-                    // "a в диапазоне" и "b = target-a тоже в диапазоне" —
-                    // если такого a не существует вообще (targetAnswer
-                    // больше, чем могут дать два числа из диапазона), это
-                    // равносильно тому, что герой стал сильнее, чем
-                    // "видимые" числа в настройках вообще способны выразить
-                    // сложением двух штук — такого быть не должно (см.
-                    // ограничение силы героя в TowerMinigameController), но
-                    // на всякий случай не ломаем диапазон, а берём ближайшее
-                    // корректное число.
+                    // [MinValue, MaxValue] (TryBoundsForSum считает
+                    // пересечение обоих условий).
                     if (TryBoundsForSum(context, targetAnswer, out int aLo, out int aHi))
                     {
                         int a = Random.Range(aLo, aHi + 1);
-                        int b = targetAnswer - a;
-                        return new MathProblem($"{a} + {b}", targetAnswer);
+                        problem = new MathProblem($"{a} + {targetAnswer - a}", targetAnswer);
+                        return true;
                     }
-                    else
-                    {
-                        int aSafe = Mathf.Clamp(targetAnswer / 2, context.MinValue, context.MaxValue);
-                        int bSafe = Mathf.Clamp(targetAnswer - aSafe, context.MinValue, context.MaxValue);
-                        return new MathProblem($"{aSafe} + {bSafe}", aSafe + bSafe);
-                    }
+                    break;
                 }
             }
+
+            problem = default;
+            return false;
+        }
+
+        private static List<MathOperation> AllowedOperationList(MathOperation allowed)
+        {
+            var list = new List<MathOperation>(4);
+            if (allowed == MathOperation.None) { list.Add(MathOperation.Addition); return list; }
+            if ((allowed & MathOperation.Addition) != 0) list.Add(MathOperation.Addition);
+            if ((allowed & MathOperation.Subtraction) != 0) list.Add(MathOperation.Subtraction);
+            if ((allowed & MathOperation.Multiplication) != 0) list.Add(MathOperation.Multiplication);
+            if ((allowed & MathOperation.Division) != 0) list.Add(MathOperation.Division);
+            return list;
         }
 
         // Границы для первого слагаемого/вычитаемого a, при которых ВТОРОЕ

@@ -15,3 +15,4 @@ MonoBehaviour:
   backgroundSprite: {fileID: 21300000, guid: 51a8a329cbf8978418be0e49151f9a29, type: 3}
   ambientTint: {r: 1, g: 1, b: 1, a: 1}
   darknessAmount: 0
+  floorLine: 0.1709

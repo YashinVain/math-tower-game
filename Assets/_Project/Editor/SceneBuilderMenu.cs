@@ -21,6 +21,11 @@ namespace MathGame.EditorTools
     // руками, повторный запуск это не тронет.
     public static class SceneBuilderMenu
     {
+        // Размер кнопок главного меню и кнопки "Назад" на выборе уровней.
+        private const float MenuButtonWidth = 400f;
+        private const float MenuButtonHeight = 100f;
+        private const int MenuButtonFont = 40;
+
         private const string ScenesFolder = "Assets/_Project/Scenes";
         private const string CatalogPath = "Assets/_Project/ScriptableObjects/LevelCatalog.asset";
 
@@ -232,8 +237,8 @@ namespace MathGame.EditorTools
         // Фон меню: картинка 16:9 на весь экран. AspectRatioFitter в режиме
         // EnvelopeParent увеличивает её ровно настолько, чтобы закрыть весь
         // экран при любой форме окна, не искажая (лишнее обрезается). Сверху
-        // лёгкое затемнение (25%), чтобы белые подписи и кнопки читались на
-        // светлом небе.
+        // совсем лёгкое затемнение (6%): фон теперь светлый и яркий, а кнопки
+        // и подписи и так тёмные и хорошо читаются.
         private static void AddMenuBackground(Transform canvasTransform)
         {
             var sprite = LoadArtSprite(ArtSpecs.MenuBackground);
@@ -249,7 +254,7 @@ namespace MathGame.EditorTools
 
             var dimRect = CreateFullScreenPanel(canvasTransform, "MenuDimmer");
             var dimImage = dimRect.gameObject.AddComponent<Image>();
-            dimImage.color = new Color(0f, 0f, 0f, 0.25f);
+            dimImage.color = new Color(0f, 0f, 0f, 0.06f);
             dimImage.raycastTarget = false;
         }
 
@@ -257,16 +262,16 @@ namespace MathGame.EditorTools
         {
             var panel = CreateFullScreenPanel(canvasTransform, "MainPanel");
 
-            // Крупные кнопки главного меню (раньше 320×80 — на большом экране
-            // выглядели мелкими на фоне нарисованной картинки).
-            var play = CreateButton(panel, "PlayButton", "Играть", 520, 130, 52);
-            AnchorAt(play.GetComponent<RectTransform>(), 0.5f, 0.60f, 520, 130);
+            // Кнопки главного меню (400×100). Такого же размера кнопка
+            // "Назад" на экране выбора уровней — все кнопки меню одинаковые.
+            var play = CreateButton(panel, "PlayButton", "Играть", MenuButtonWidth, MenuButtonHeight, MenuButtonFont);
+            AnchorAt(play.GetComponent<RectTransform>(), 0.5f, 0.58f, MenuButtonWidth, MenuButtonHeight);
 
-            var settings = CreateButton(panel, "SettingsButton", "Настройки", 520, 130, 52);
-            AnchorAt(settings.GetComponent<RectTransform>(), 0.5f, 0.42f, 520, 130);
+            var settings = CreateButton(panel, "SettingsButton", "Настройки", MenuButtonWidth, MenuButtonHeight, MenuButtonFont);
+            AnchorAt(settings.GetComponent<RectTransform>(), 0.5f, 0.42f, MenuButtonWidth, MenuButtonHeight);
 
-            var quit = CreateButton(panel, "QuitButton", "Выход", 520, 130, 52);
-            AnchorAt(quit.GetComponent<RectTransform>(), 0.5f, 0.24f, 520, 130);
+            var quit = CreateButton(panel, "QuitButton", "Выход", MenuButtonWidth, MenuButtonHeight, MenuButtonFont);
+            AnchorAt(quit.GetComponent<RectTransform>(), 0.5f, 0.26f, MenuButtonWidth, MenuButtonHeight);
 
             return (panel.gameObject, play, settings, quit);
         }
@@ -275,11 +280,13 @@ namespace MathGame.EditorTools
         {
             var panel = CreateFullScreenPanel(canvasTransform, "LevelSelectPanel");
 
-            var back = CreateButton(panel, "BackButton", "Назад", 180, 60, 24);
-            AnchorAt(back.GetComponent<RectTransform>(), 0.12f, 0.90f, 180, 60);
+            // Кнопка "Назад" — того же размера, что кнопки главного меню, по
+            // центру под сеткой уровней.
+            var back = CreateButton(panel, "BackButton", "Назад", MenuButtonWidth, MenuButtonHeight, MenuButtonFont);
+            AnchorAt(back.GetComponent<RectTransform>(), 0.5f, 0.17f, MenuButtonWidth, MenuButtonHeight);
 
             var container = CreateUIObject("ButtonsContainer", panel);
-            AnchorAt(container, 0.5f, 0.55f, 900, 160);
+            AnchorAt(container, 0.5f, 0.57f, 900, 160);
             var grid = container.gameObject.AddComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(160, 160);
             grid.spacing = new Vector2(20, 20);
@@ -335,24 +342,25 @@ namespace MathGame.EditorTools
                 boardRect.SetAsFirstSibling(); // позади всех настроек
             }
 
-            // Сверху — быстрая автонастройка под возраст (4 кнопки, см.
-            // AgePresets). Остальные ряды из-за этого начинаются чуть ниже
-            // и стоят чуть плотнее прежнего (0.064 вместо 0.075), чтобы всё
-            // по-прежнему помещалось над кнопками "Сбросить прогресс/Назад".
-            var agePresetsLabel = CreateLabel(panel, "AgePresetsLabel", "Возраст игрока (быстрая настройка):", 22, Color.white, 700, 34, TextAlignmentOptions.Center);
-            AnchorAt(agePresetsLabel.rectTransform, 0.5f, 0.945f, 700, 34);
+            // Заголовок.
+            var title = CreateLabel(panel, "TitleLabel", "Настройки", 60, SettingsValueColor, 700, 80, TextAlignmentOptions.Center);
+            AnchorAt(title.rectTransform, 0.5f, 0.5f, 700, 80, 0f, 392f);
 
-            var age6to8Button = CreateButton(panel, "Age6to8Button", "6–8 лет", 170, 52, 22);
-            AnchorAt(age6to8Button.GetComponent<RectTransform>(), 0.29f, 0.895f, 170, 52);
-            var age9to11Button = CreateButton(panel, "Age9to11Button", "9–11 лет", 170, 52, 22);
-            AnchorAt(age9to11Button.GetComponent<RectTransform>(), 0.43f, 0.895f, 170, 52);
-            var age12to14Button = CreateButton(panel, "Age12to14Button", "12–14 лет", 170, 52, 22);
-            AnchorAt(age12to14Button.GetComponent<RectTransform>(), 0.57f, 0.895f, 170, 52);
-            var age15to16Button = CreateButton(panel, "Age15to16Button", "15–16 лет", 170, 52, 22);
-            AnchorAt(age15to16Button.GetComponent<RectTransform>(), 0.71f, 0.895f, 170, 52);
+            // Быстрая автонастройка под возраст (4 кнопки, см. AgePresets).
+            var agePresetsLabel = CreateLabel(panel, "AgePresetsLabel", "Возраст игрока (быстрая настройка)", 30, SettingsTextColor, 900, 44, TextAlignmentOptions.Center);
+            AnchorAt(agePresetsLabel.rectTransform, 0.5f, 0.5f, 900, 44, 0f, 328f);
 
-            float y = 0.815f;
-            const float step = 0.064f;
+            const float ageW = 260f, ageH = 80f, agePitch = 290f;
+            Button MakeAge(string name, string text, float x)
+            {
+                var button = CreateButton(panel, name, text, ageW, ageH, 32);
+                AnchorAt(button.GetComponent<RectTransform>(), 0.5f, 0.5f, ageW, ageH, x, 258f);
+                return button;
+            }
+            var age6to8Button = MakeAge("Age6to8Button", "6–8 лет", -1.5f * agePitch);
+            var age9to11Button = MakeAge("Age9to11Button", "9–11 лет", -0.5f * agePitch);
+            var age12to14Button = MakeAge("Age12to14Button", "12–14 лет", 0.5f * agePitch);
+            var age15to16Button = MakeAge("Age15to16Button", "15–16 лет", 1.5f * agePitch);
 
             // Верхняя граница слайдера "Мин. число" — ровно
             // GameSettingsData.MaxNumberRangeMin (2): выше поднять нельзя,
@@ -360,40 +368,41 @@ namespace MathGame.EditorTools
             // (см. подробности в GameSettingsData). Слайдер физически не
             // даёт задрать значение выше — не приходится "откатывать" его
             // обратно после того, как игрок уже подвинул ползунок.
-            var (numberMinSlider, numberMinLabel) = CreateSliderRow(panel, "NumberMinRow", "Мин. число", 0, GameSettingsData.MaxNumberRangeMin, 1, y); y -= step;
-            var (numberMaxSlider, numberMaxLabel) = CreateSliderRow(panel, "NumberMaxRow", "Макс. число", 1, 50, 16, y); y -= step;
+            var (numberMinSlider, numberMinLabel) = CreateSliderRow(panel, "NumberMinRow", "Мин. число", 0, GameSettingsData.MaxNumberRangeMin, 1, 162f);
+            var (numberMaxSlider, numberMaxLabel) = CreateSliderRow(panel, "NumberMaxRow", "Макс. число", 1, 50, 16, 90f);
 
-            var (additionToggle, _) = CreateToggleRow(panel, "AdditionRow", "Сложение", true, y); y -= step;
-            var (subtractionToggle, _) = CreateToggleRow(panel, "SubtractionRow", "Вычитание", false, y); y -= step;
-            var (multiplicationToggle, _) = CreateToggleRow(panel, "MultiplicationRow", "Умножение", false, y); y -= step;
-            var (divisionToggle, _) = CreateToggleRow(panel, "DivisionRow", "Деление", false, y); y -= step;
+            // Действия — одним рядом, галочка вплотную к подписи.
+            const float opX0 = SettingsLeftEdge + 30f, opPitch = 310f;
+            var (additionToggle, _) = CreateToggleRow(panel, "AdditionRow", "Сложение", true, opX0, 12f);
+            var (subtractionToggle, _) = CreateToggleRow(panel, "SubtractionRow", "Вычитание", false, opX0 + opPitch, 12f);
+            var (multiplicationToggle, _) = CreateToggleRow(panel, "MultiplicationRow", "Умножение", false, opX0 + 2f * opPitch, 12f);
+            var (divisionToggle, _) = CreateToggleRow(panel, "DivisionRow", "Деление", false, opX0 + 3f * opPitch, 12f);
 
-            var (difficultyGrowthToggle, _) = CreateToggleRow(panel, "DifficultyGrowthRow", "Рост сложности", true, y); y -= step;
-            var (difficultyGrowthRateSlider, difficultyGrowthRateLabel) = CreateSliderRow(panel, "DifficultyGrowthRateRow", "Скорость роста", 0f, 1f, 0.15f, y); y -= step;
+            var (difficultyGrowthToggle, _) = CreateToggleRow(panel, "DifficultyGrowthRow", "Рост сложности", true, opX0, -60f, 330f);
+            var (doorsEasyModeToggle, _) = CreateToggleRow(panel, "DoorsEasyModeRow", "Упрощённые двери", false, opX0 + 2f * opPitch - 30f, -60f, 340f);
 
-            var (timeLimitSlider, timeLimitLabel) = CreateSliderRow(panel, "TimeLimitRow", "Лимит времени, сек", 15, 300, 90, y); y -= step;
+            var (difficultyGrowthRateSlider, difficultyGrowthRateLabel) = CreateSliderRow(panel, "DifficultyGrowthRateRow", "Скорость роста", 0f, 1f, 0.15f, -140f);
+            var (timeLimitSlider, timeLimitLabel) = CreateSliderRow(panel, "TimeLimitRow", "Лимит времени, сек", 15, 300, 90, -208f);
 
-            var (doorsEasyModeToggle, _) = CreateToggleRow(panel, "DoorsEasyModeRow", "Упрощённые двери", false, y);
+            var resetProgressButton = CreateButton(panel, "ResetProgressButton", "Сбросить прогресс", 440, 90, 32);
+            AnchorAt(resetProgressButton.GetComponent<RectTransform>(), 0.5f, 0.5f, 440, 90, -260f, -335f);
 
-            var resetProgressButton = CreateButton(panel, "ResetProgressButton", "Сбросить прогресс", 300, 56, 22);
-            AnchorAt(resetProgressButton.GetComponent<RectTransform>(), 0.35f, 0.10f, 300, 56);
-
-            var back = CreateButton(panel, "BackButton", "Назад", 180, 56, 22);
-            AnchorAt(back.GetComponent<RectTransform>(), 0.68f, 0.10f, 180, 56);
+            var back = CreateButton(panel, "BackButton", "Назад", 300, 90, 32);
+            AnchorAt(back.GetComponent<RectTransform>(), 0.5f, 0.5f, 300, 90, 190f, -335f);
 
             var confirmRoot = CreateUIObject("ResetConfirmRoot", panel);
             StretchFull(confirmRoot);
             var confirmBg = confirmRoot.gameObject.AddComponent<Image>();
             confirmBg.color = new Color(0f, 0f, 0f, 0.85f);
 
-            var warning = CreateLabel(confirmRoot, "WarningText", "Точно сбросить весь прогресс?", 28, Color.white, 560, 60, TextAlignmentOptions.Center);
-            AnchorAt(warning.rectTransform, 0.5f, 0.55f, 560, 60);
+            var warning = CreateLabel(confirmRoot, "WarningText", "Точно сбросить весь прогресс?", 44, SettingsTextColor, 900, 80, TextAlignmentOptions.Center);
+            AnchorAt(warning.rectTransform, 0.5f, 0.5f, 900, 80, 0f, 70f);
 
-            var yesButton = CreateButton(confirmRoot, "ResetConfirmYesButton", "Да, сбросить", 280, 60, 24);
-            AnchorAt(yesButton.GetComponent<RectTransform>(), 0.40f, 0.42f, 280, 60);
+            var yesButton = CreateButton(confirmRoot, "ResetConfirmYesButton", "Да, сбросить", 380, 90, 32);
+            AnchorAt(yesButton.GetComponent<RectTransform>(), 0.5f, 0.5f, 380, 90, -210f, -60f);
 
-            var noButton = CreateButton(confirmRoot, "ResetConfirmNoButton", "Отмена", 280, 60, 24);
-            AnchorAt(noButton.GetComponent<RectTransform>(), 0.60f, 0.42f, 280, 60);
+            var noButton = CreateButton(confirmRoot, "ResetConfirmNoButton", "Отмена", 380, 90, 32);
+            AnchorAt(noButton.GetComponent<RectTransform>(), 0.5f, 0.5f, 380, 90, 210f, -60f);
 
             confirmRoot.gameObject.SetActive(false);
 
@@ -484,21 +493,40 @@ namespace MathGame.EditorTools
             return hud.gameObject;
         }
 
+        // Деревянная доска по центру панели (окна паузы и результата):
+        // та же рамка, что у экрана настроек, — окна в одном стиле с меню.
+        private static void AddCenteredBoard(Transform panel, float width, float height)
+        {
+            var boardSprite = LoadArtSprite(ArtSpecs.PanelBoard);
+            if (boardSprite == null) return;
+
+            var boardRect = CreateUIObject("Board", panel);
+            AnchorAt(boardRect, 0.5f, 0.5f, width, height);
+            var boardImage = boardRect.gameObject.AddComponent<Image>();
+            boardImage.sprite = boardSprite;
+            boardImage.type = Image.Type.Sliced;
+            boardImage.raycastTarget = false;
+            boardImage.pixelsPerUnitMultiplier = 2f;
+            boardRect.SetAsFirstSibling(); // позади надписей и кнопок
+        }
+
         private static GameObject BuildResultPanel(Transform canvasTransform)
         {
             var panel = CreateFullScreenPanel(canvasTransform, "ResultPanel");
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.75f);
 
-            var title = CreateLabel(panel, "TitleLabel", "Уровень пройден!", 48, Color.white, 700, 80, TextAlignmentOptions.Center);
-            AnchorAt(title.rectTransform, 0.5f, 0.62f, 700, 80);
+            AddCenteredBoard(panel, 960, 620);
 
-            var primary = CreateButton(panel, "PrimaryButton", "Следующий уровень", 380, 70, 26);
-            AnchorAt(primary.GetComponent<RectTransform>(), 0.5f, 0.46f, 380, 70);
+            var title = CreateLabel(panel, "TitleLabel", "Уровень пройден!", 60, SettingsValueColor, 860, 90, TextAlignmentOptions.Center);
+            AnchorAt(title.rectTransform, 0.5f, 0.5f, 860, 90, 0f, 170f);
+
+            var primary = CreateButton(panel, "PrimaryButton", "Следующий уровень", 560, 100, 38);
+            AnchorAt(primary.GetComponent<RectTransform>(), 0.5f, 0.5f, 560, 100, 0f, 10f);
             var primaryLabel = primary.GetComponentInChildren<TextMeshProUGUI>();
 
-            var secondary = CreateButton(panel, "SecondaryButton", "В меню", 380, 70, 26);
-            AnchorAt(secondary.GetComponent<RectTransform>(), 0.5f, 0.32f, 380, 70);
+            var secondary = CreateButton(panel, "SecondaryButton", "В меню", 560, 100, 38);
+            AnchorAt(secondary.GetComponent<RectTransform>(), 0.5f, 0.5f, 560, 100, 0f, -135f);
 
             var resultPanel = panel.gameObject.AddComponent<ResultPanel>();
             SetField(resultPanel, "root", panel.gameObject);
@@ -517,14 +545,16 @@ namespace MathGame.EditorTools
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.75f);
 
-            var title = CreateLabel(panel, "TitleLabel", "Пауза", 44, Color.white, 400, 70, TextAlignmentOptions.Center);
-            AnchorAt(title.rectTransform, 0.5f, 0.62f, 400, 70);
+            AddCenteredBoard(panel, 760, 560);
 
-            var resume = CreateButton(panel, "ResumeButton", "Продолжить", 320, 70, 26);
-            AnchorAt(resume.GetComponent<RectTransform>(), 0.5f, 0.46f, 320, 70);
+            var title = CreateLabel(panel, "TitleLabel", "Пауза", 64, SettingsValueColor, 600, 90, TextAlignmentOptions.Center);
+            AnchorAt(title.rectTransform, 0.5f, 0.5f, 600, 90, 0f, 150f);
 
-            var exit = CreateButton(panel, "ExitButton", "Выйти", 320, 70, 26);
-            AnchorAt(exit.GetComponent<RectTransform>(), 0.5f, 0.32f, 320, 70);
+            var resume = CreateButton(panel, "ResumeButton", "Продолжить", 480, 100, 38);
+            AnchorAt(resume.GetComponent<RectTransform>(), 0.5f, 0.5f, 480, 100, 0f, 0f);
+
+            var exit = CreateButton(panel, "ExitButton", "Выйти", 480, 100, 38);
+            AnchorAt(exit.GetComponent<RectTransform>(), 0.5f, 0.5f, 480, 100, 0f, -135f);
 
             var pausePanel = panel.gameObject.AddComponent<PausePanel>();
             SetField(pausePanel, "root", panel.gameObject);

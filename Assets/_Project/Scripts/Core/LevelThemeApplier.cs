@@ -27,6 +27,11 @@ namespace MathGame.Core
             {
                 backgroundRenderer.sprite = theme.backgroundSprite;
                 backgroundRenderer.color = Color.white;
+
+                // У стены линия пола должна совпасть с землёй, на которой стоят
+                // ноги героя и дверей.
+                var fitter = backgroundRenderer.GetComponent<MathGame.Utils.BackgroundFitter>();
+                if (fitter != null) fitter.FloorLine = theme.floorLine;
                 return;
             }
 

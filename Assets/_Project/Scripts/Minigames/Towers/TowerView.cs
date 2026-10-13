@@ -33,10 +33,10 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private float midStandHeight = 0.33f;
         [SerializeField] private float topStandHeight = 0.32f;
 
-        // Картинка верхнего блока нарисована со смещением на 15 px влево
-        // (площадка по центру 612, у остальных 626) — после увеличения это
-        // около 0.03 единицы вправо.
-        [SerializeField] private float topXOffset = 0.03f;
+        // Сдвиг верхнего блока по X. Блоки башни нарисованы строго по центру,
+        // поэтому 0 (у прежних нарисованных нейросетью картинок было 0.03;
+        // поле переименовано, чтобы старое значение из префаба не мешало).
+        [SerializeField] private float topShiftX = 0f;
 
         public float FloorHeight => floorHeight;
 
@@ -65,7 +65,7 @@ namespace MathGame.Minigames.Towers
 
                 var floor = new GameObject("Floor_" + i);
                 floor.transform.SetParent(transform, false);
-                float x = (i == floorCount - 1) ? topXOffset : 0f;
+                float x = (i == floorCount - 1) ? topShiftX : 0f;
                 floor.transform.localPosition = new Vector3(x, i * floorHeight, 0f);
 
                 var spriteRenderer = floor.AddComponent<SpriteRenderer>();

@@ -141,6 +141,18 @@ namespace MathGame.Minigames.Doors
             var difficulty = _context.BuildDifficulty();
             var targetProblem = _context.ProblemGenerator.Generate(difficulty);
             _heroTargetNumber = targetProblem.Answer;
+
+            // Пример для правильной двери строим заранее и сверяем ответ:
+            // если генератор по какой-то причине не смог дать нужный ответ,
+            // цель героя подстраивается под него — иначе на уровне не
+            // осталось бы ни одной правильной двери (так уже было).
+            var correctProblem = _context.ProblemGenerator.GenerateWithAnswer(difficulty, _heroTargetNumber);
+            if (correctProblem.Answer != _heroTargetNumber)
+            {
+                Debug.LogWarning($"Генератор вернул ответ {correctProblem.Answer} вместо {_heroTargetNumber}: цель героя заменена.");
+                _heroTargetNumber = correctProblem.Answer;
+            }
+
             if (heroTargetLabel != null)
             {
                 heroTargetLabel.text = _heroTargetNumber.ToString();
@@ -160,7 +172,7 @@ namespace MathGame.Minigames.Doors
                 MathProblem problem;
                 if (i == correctSlot)
                 {
-                    problem = _context.ProblemGenerator.GenerateWithAnswer(difficulty, _heroTargetNumber);
+                    problem = correctProblem;
                 }
                 else
                 {

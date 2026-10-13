@@ -56,6 +56,12 @@ namespace MathGame.EditorTools
             BackgroundsFolder + "bg_castle_4_throne.png",
         };
 
+        // Где на всех фонах игры (стены замка и улица) проходит "земля" — доля
+        // высоты картинки снизу, на ней стоят ноги героя, дверей и основание
+        // башни. Рисуют фоны Tools/MakeWallArt.ps1 и Tools/MakeSceneryArt.ps1
+        // (у стен это последняя строка вывода) — число должно совпадать.
+        public const float SceneFloorLine = 0.1709f;
+
         // Башня собирается из трёх блоков одинакового размера (нижний этаж
         // с дверью, средний, верхний с зубцами), см. TowerView.
         public const string TowersFolder = ArtRoot + "Towers/";
@@ -167,7 +173,7 @@ namespace MathGame.EditorTools
     {
         // Меняйте номер, когда меняете правила/числа выше: Unity
         // переимпортирует все картинки заново и применит новые настройки.
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 6;
 
         private void OnPreprocessTexture()
         {

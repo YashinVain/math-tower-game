@@ -123,8 +123,12 @@ namespace MathGame.EditorTools
         {
             var theme = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Level{levelIndex + 1}.asset");
 
-            var background = EditorBuildUtils.LoadArtSprite(ArtSpecs.BackgroundForLevel(levelIndex, isDoorLevel));
+            var backgroundPath = ArtSpecs.BackgroundForLevel(levelIndex, isDoorLevel);
+            var background = EditorBuildUtils.LoadArtSprite(backgroundPath);
             theme.backgroundSprite = background;
+            // Нарисованные фоны (стена замка / улица): линия земли — на уровне
+            // ног персонажей и основания башни (см. BackgroundFitter).
+            theme.floorLine = background != null ? ArtSpecs.SceneFloorLine : 0f;
 
             if (background != null)
             {
