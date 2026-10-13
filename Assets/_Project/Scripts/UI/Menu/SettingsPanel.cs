@@ -41,8 +41,10 @@ namespace MathGame.UI.Menu
         [SerializeField] private Button age12to14Button;
         [SerializeField] private Button age15to16Button;
 
-        private static readonly Color PresetNormalColor = new Color(1f, 1f, 1f, 0.9f);
-        private static readonly Color PresetSelectedColor = new Color(0.55f, 0.9f, 0.55f, 1f);
+        // Кнопки теперь нарисованные (дерево и железо), поэтому "выбрана" —
+        // это золотистая подсветка кнопки, а "не выбрана" — как есть.
+        private static readonly Color PresetNormalColor = Color.white;
+        private static readonly Color PresetSelectedColor = new Color(1f, 0.82f, 0.3f, 1f);
 
         private bool _isLoading;
 

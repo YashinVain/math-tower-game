@@ -66,7 +66,7 @@ namespace MathGame.EditorTools
                 int levelNumber = levelIndex + 1; // 1..10, для человекочитаемых имён
                 bool isTowerLevel = levelIndex % 2 == 0; // 0,2,4,6,8 → нечётные номера уровней (1,3,5,7,9)
 
-                var theme = BuildTheme(levelIndex);
+                var theme = BuildTheme(levelIndex, !isTowerLevel);
 
                 MinigameDefinition minigame;
                 string typeSuffix;
@@ -115,11 +115,15 @@ namespace MathGame.EditorTools
         // отключаем (белый цвет, 0): картинка показывается как нарисована.
         // Если картинки нет, останется прежний запасной вариант —
         // затемнение цветом от светлого к тёмному.
-        private static LevelVisualTheme BuildTheme(int levelIndex)
+        //
+        // Уровни-башни проходятся на улице, уровни-двери — внутри замка (для
+        // них есть отдельный набор фонов; пока какой-то картинки замка нет,
+        // берётся уличный фон той же ступени — см. ArtSpecs).
+        private static LevelVisualTheme BuildTheme(int levelIndex, bool isDoorLevel)
         {
             var theme = LoadOrCreate<LevelVisualTheme>($"{ThemesFolder}/Theme_Level{levelIndex + 1}.asset");
 
-            var background = EditorBuildUtils.LoadArtSprite(ArtSpecs.BackgroundForLevel(levelIndex));
+            var background = EditorBuildUtils.LoadArtSprite(ArtSpecs.BackgroundForLevel(levelIndex, isDoorLevel));
             theme.backgroundSprite = background;
 
             if (background != null)

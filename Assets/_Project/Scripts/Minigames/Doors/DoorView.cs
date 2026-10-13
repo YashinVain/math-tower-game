@@ -27,13 +27,17 @@ namespace MathGame.Minigames.Doors
         [SerializeField] private SpriteRenderer ambusherRenderer;
 
         // Размер текста примера над дверью. Чуть меньше, чем у гоблинов
-        // (4.5): четыре подписи стоят в ряд с шагом до 2.7, и самый длинный
-        // пример (например "144 : 12 = x") при 4.0 занимает около 2.1 —
-        // ещё помещается, не наезжая на соседнюю дверь. Можно менять в
-        // Inspector (префаб Door), но не слишком сильно по этой причине.
-        [SerializeField] private float labelFontSize = 4f;
-        // Зазор между верхом двери и подписью над ней.
-        [SerializeField] private float labelGap = 0.3f;
+        // (6.5): четыре подписи стоят в ряд с шагом до 2.7, и самый длинный
+        // пример (например "144 : 12 = x") шрифтом Lilita One при 6.2
+        // занимает около 2.4 — ещё помещается, не наезжая на соседнюю дверь.
+        // Можно менять в Inspector (префаб Door), но не слишком сильно по
+        // этой причине.
+        [SerializeField] private float doorNumberSize = 8f;
+        // Если пример шире этого значения (в единицах двери), шрифт уменьшается:
+        // четыре подписи стоят в ряд, и соседние не должны наезжать друг на друга.
+        [SerializeField] private float doorNumberMaxWidth = 2.35f;
+        // Зазор между верхом двери и нижним краем текста над ней.
+        [SerializeField] private float labelGap = 0.12f;
         // Во сколько раз гоблин-засада крупнее своего обычного размера:
         // дверь стала высокой (2.8), и гоблин высотой 1.7 терялся бы в
         // проёме.
@@ -43,11 +47,23 @@ namespace MathGame.Minigames.Doors
 
         public int Answer { get; private set; }
 
+        // Размер подписи после подгонки по ширине. Контроллер берёт самый
+        // маленький из четырёх и ставит его всем дверям ряда, чтобы числа на
+        // соседних дверях были одного размера.
+        public float LabelFontSize => expressionLabel.fontSize;
+
+        public void SetLabelFontSize(float size)
+        {
+            expressionLabel.fontSize = size;
+            FitToSprite(); // заново поставить подпись над дверью
+        }
+
         public void Init(MathProblem problem, Action<DoorView> onChosen)
         {
             Answer = problem.Answer;
-            expressionLabel.fontSize = labelFontSize;
-            expressionLabel.text = $"{problem.Expression} = x";
+            LabelStyle.Apply(expressionLabel, LabelStyle.ProblemColor, doorNumberSize);
+            expressionLabel.text = problem.Expression;
+            LabelStyle.FitWidth(expressionLabel, doorNumberMaxWidth);
             _onChosen = onChosen;
 
             FitToSprite();
@@ -70,7 +86,10 @@ namespace MathGame.Minigames.Doors
                 box.offset = bounds.center;
             }
 
-            expressionLabel.transform.localPosition = new Vector3(0f, bounds.max.y + labelGap, 0f);
+            // Подпись над дверью, нижний край текста на labelGap выше верха
+            // двери (белая обводка делает её читаемой и на светлой стене
+            // замка, и на тёмной).
+            LabelLayout.PlaceAbove(expressionLabel, doorRenderer, labelGap);
         }
 
         private void OnMouseDown()

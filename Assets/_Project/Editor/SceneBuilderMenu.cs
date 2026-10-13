@@ -257,14 +257,16 @@ namespace MathGame.EditorTools
         {
             var panel = CreateFullScreenPanel(canvasTransform, "MainPanel");
 
-            var play = CreateButton(panel, "PlayButton", "Играть", 320, 80, 32);
-            AnchorAt(play.GetComponent<RectTransform>(), 0.5f, 0.62f, 320, 80);
+            // Крупные кнопки главного меню (раньше 320×80 — на большом экране
+            // выглядели мелкими на фоне нарисованной картинки).
+            var play = CreateButton(panel, "PlayButton", "Играть", 520, 130, 52);
+            AnchorAt(play.GetComponent<RectTransform>(), 0.5f, 0.60f, 520, 130);
 
-            var settings = CreateButton(panel, "SettingsButton", "Настройки", 320, 80, 32);
-            AnchorAt(settings.GetComponent<RectTransform>(), 0.5f, 0.48f, 320, 80);
+            var settings = CreateButton(panel, "SettingsButton", "Настройки", 520, 130, 52);
+            AnchorAt(settings.GetComponent<RectTransform>(), 0.5f, 0.42f, 520, 130);
 
-            var quit = CreateButton(panel, "QuitButton", "Выход", 320, 80, 32);
-            AnchorAt(quit.GetComponent<RectTransform>(), 0.5f, 0.34f, 320, 80);
+            var quit = CreateButton(panel, "QuitButton", "Выход", 520, 130, 52);
+            AnchorAt(quit.GetComponent<RectTransform>(), 0.5f, 0.24f, 520, 130);
 
             return (panel.gameObject, play, settings, quit);
         }
@@ -308,10 +310,30 @@ namespace MathGame.EditorTools
         {
             var panel = CreateFullScreenPanel(canvasTransform, "SettingsPanel");
 
-            // Тёмная подложка на весь экран: слайдеры и белые подписи
-            // настроек плохо читались бы прямо на нарисованном фоне меню.
+            // Затемнение на весь экран: слайдеры и белые подписи настроек
+            // плохо читались бы прямо на нарисованном фоне меню. Поверх него —
+            // нарисованная деревянная доска с железной окантовкой (собрана из
+            // рамки уровня, 9-slice), на которой стоят все настройки.
             var panelBackground = panel.gameObject.AddComponent<Image>();
-            panelBackground.color = new Color(0f, 0f, 0f, 0.72f);
+            panelBackground.color = new Color(0f, 0f, 0f, 0.6f);
+
+            var boardSprite = LoadArtSprite(ArtSpecs.PanelBoard);
+            if (boardSprite != null)
+            {
+                var boardRect = CreateUIObject("Board", panel);
+                boardRect.anchorMin = new Vector2(0.03f, 0.025f);
+                boardRect.anchorMax = new Vector2(0.97f, 0.995f);
+                boardRect.offsetMin = Vector2.zero;
+                boardRect.offsetMax = Vector2.zero;
+                var boardImage = boardRect.gameObject.AddComponent<Image>();
+                boardImage.sprite = boardSprite;
+                boardImage.type = Image.Type.Sliced;
+                boardImage.raycastTarget = false;
+                // Уголки доски 76 px — для окна во весь экран это много, берём
+                // вдвое меньше, чтобы рамка не съедала место под настройки.
+                boardImage.pixelsPerUnitMultiplier = 2f;
+                boardRect.SetAsFirstSibling(); // позади всех настроек
+            }
 
             // Сверху — быстрая автонастройка под возраст (4 кнопки, см.
             // AgePresets). Остальные ряды из-за этого начинаются чуть ниже
@@ -402,43 +424,58 @@ namespace MathGame.EditorTools
             return (panel.gameObject, back);
         }
 
+        // Таймер: деревянная табличка (та же, что у кнопок) в ВЕРХНЕМ ЛЕВОМ углу
+        // — справа в эти моменты башня с примерами, и таймер по центру на неё
+        // наезжал. Внутри время крупным шрифтом и тонкая золотая полоска
+        // оставшегося времени (раньше была прозрачная серо-синяя плашка и
+        // плоская зелёная полоса, которые выбивались из стиля игры).
         private static GameObject BuildHud(Transform canvasTransform)
         {
             var hud = CreateUIObject("HUD", canvasTransform);
-            AnchorAt(hud, 0.5f, 1f, 360, 140, 0f, -75f);
+            AnchorAt(hud, 0.1f, 1f, 300, 100, 0f, -62f);
 
-            // Тёмная полупрозрачная подложка под весь HUD — без неё белый
-            // текст таймера терялся на светлом фоне уровня (он же меняется
-            // по темам, так что полагаться на "фон всегда тёмный" нельзя).
-            var hudBg = hud.gameObject.AddComponent<Image>();
-            hudBg.color = new Color(0f, 0f, 0f, 0.45f);
+            var plaqueSprite = LoadArtSprite(ArtSpecs.ButtonWide);
+            var plaque = hud.gameObject.AddComponent<Image>();
+            plaque.raycastTarget = false;
+            if (plaqueSprite != null)
+            {
+                plaque.sprite = plaqueSprite;
+                plaque.type = Image.Type.Sliced;
+                plaque.pixelsPerUnitMultiplier = Mathf.Max(1f, ArtSpecs.SlicedCornerPx / (0.3f * 100f));
+                plaque.color = Color.white;
+            }
+            else
+            {
+                plaque.color = new Color(0.25f, 0.15f, 0.08f, 0.9f);
+            }
 
-            // Шрифт был 40 — увеличен и сделан жирным на случай, если дело
-            // было не только в контрасте, но и в том, что текст было просто
-            // тяжело разглядеть на таком размере.
-            var timerLabel = CreateLabel(hud, "TimerLabel", "01:30", 56, Color.white, 300, 80, TextAlignmentOptions.Center);
-            timerLabel.fontStyle = FontStyles.Bold;
+            var timerLabel = CreateLabel(hud, "TimerLabel", "01:30", 50, new Color(1f, 0.93f, 0.75f), 260, 60, TextAlignmentOptions.Center);
+            timerLabel.raycastTarget = false;
             timerLabel.rectTransform.anchorMin = new Vector2(0.5f, 1f);
             timerLabel.rectTransform.anchorMax = new Vector2(0.5f, 1f);
             timerLabel.rectTransform.pivot = new Vector2(0.5f, 1f);
-            timerLabel.rectTransform.anchoredPosition = Vector2.zero;
-            // На всякий случай явно ставим label последним по порядку среди
-            // детей HUD — в Unity UI то, что позже в списке, рисуется
-            // поверх того, что раньше, так что это гарантирует, что текст
-            // не может оказаться нарисован "под" чем-то ещё.
-            timerLabel.transform.SetAsLastSibling();
+            timerLabel.rectTransform.anchoredPosition = new Vector2(0f, -12f);
 
-            var fillBarRect = CreateUIObject("TimerFillBar", hud);
-            fillBarRect.anchorMin = new Vector2(0.5f, 1f);
-            fillBarRect.anchorMax = new Vector2(0.5f, 1f);
-            fillBarRect.pivot = new Vector2(0.5f, 1f);
-            fillBarRect.anchoredPosition = new Vector2(0f, -85f);
-            fillBarRect.sizeDelta = new Vector2(320, 20);
+            // Полоска: тёмная дорожка и золотая заливка; GameplayHud меняет
+            // ширину заливки (а не fillAmount: он работает только со спрайтом).
+            var track = CreateUIObject("TimerTrack", hud);
+            track.anchorMin = new Vector2(0.5f, 0f);
+            track.anchorMax = new Vector2(0.5f, 0f);
+            track.pivot = new Vector2(0.5f, 0f);
+            track.anchoredPosition = new Vector2(0f, 16f);
+            track.sizeDelta = new Vector2(220, 12);
+            var trackImage = track.gameObject.AddComponent<Image>();
+            trackImage.color = new Color(0.1f, 0.06f, 0.03f);
+            trackImage.raycastTarget = false;
+
+            var fillBarRect = CreateUIObject("TimerFillBar", track);
+            fillBarRect.anchorMin = Vector2.zero;
+            fillBarRect.anchorMax = Vector2.one;
+            fillBarRect.offsetMin = new Vector2(2, 2);
+            fillBarRect.offsetMax = new Vector2(-2, -2);
             var fillImage = fillBarRect.gameObject.AddComponent<Image>();
-            fillImage.color = new Color(0.3f, 0.8f, 0.4f);
-            fillImage.type = Image.Type.Filled;
-            fillImage.fillMethod = Image.FillMethod.Horizontal;
-            fillImage.fillAmount = 1f;
+            fillImage.color = new Color(0.96f, 0.76f, 0.24f);
+            fillImage.raycastTarget = false;
 
             var hudComp = hud.gameObject.AddComponent<GameplayHud>();
             SetField(hudComp, "timerLabel", timerLabel);

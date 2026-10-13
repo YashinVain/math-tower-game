@@ -44,13 +44,43 @@ namespace MathGame.EditorTools
             BackgroundsFolder + "bg_4_fortress.png",
         };
 
+        // Фоны ВНУТРИ ЗАМКА для уровней с дверями (тот же рост «страшности»,
+        // что у уличных: зал → заброшенный зал → логово → тронный зал).
+        // Если файла ещё нет, уровень получает уличный фон (см.
+        // BackgroundForLevel) — игра работает и с частью картинок.
+        public static readonly string[] CastleBackgrounds =
+        {
+            BackgroundsFolder + "bg_castle_1_hall.png",
+            BackgroundsFolder + "bg_castle_2_neglected.png",
+            BackgroundsFolder + "bg_castle_3_lair.png",
+            BackgroundsFolder + "bg_castle_4_throne.png",
+        };
+
+        // Башня собирается из трёх блоков одинакового размера (нижний этаж
+        // с дверью, средний, верхний с зубцами), см. TowerView.
+        public const string TowersFolder = ArtRoot + "Towers/";
+        public const string TowerBase = TowersFolder + "tower_base.png";
+        public const string TowerMid = TowersFolder + "tower_mid.png";
+        public const string TowerTop = TowersFolder + "tower_top.png";
+
         public const string MenuBackground = UIFolder + "menu_background.png";
         public const string LevelButtonFrame = UIFolder + "level_button_frame.png";
         public const string IconLock = UIFolder + "icon_lock.png";
         public const string IconCheck = UIFolder + "icon_check.png";
 
+        // Растягиваемые детали интерфейса, собранные из рамки уровня
+        // (Tools/MakeUiArt.ps1): широкая кнопка и доска для окон. У обеих
+        // уголки по 76 px — это границы 9-slice (уголки не растягиваются,
+        // стороны и центр тянутся под любой размер).
+        public const string ButtonWide = UIFolder + "button_wide.png";
+        public const string PanelBoard = UIFolder + "panel_board.png";
+        public const int SlicedCornerPx = 76;
+
         // Высота в мире, юниты.
-        public const float HeroHeight = 1.9f;
+        // Герой крупнее гоблинов (1.7) — раньше выглядел «маленьким» (было
+        // 1.9, то есть 17% высоты экрана; теперь около 20%). Выше поднимать
+        // не стали: башня на 4 этажа должна помещаться в экран.
+        public const float HeroHeight = 2.3f;
         public const float GoblinHeight = 1.7f;
         // Дверь заметно выше героя (1.9) — как настоящая дверь в замке. Ширина
         // получается около 2.46. На узких окнах DoorMinigameController
@@ -60,13 +90,33 @@ namespace MathGame.EditorTools
         // Зазор между макушкой/верхом двери и подписью над ней.
         public const float LabelGap = 0.3f;
 
-        // Уровни 1–2 → луг, 3–5 → пустошь, 6–8 → руины, 9–10 → крепость.
-        public static string BackgroundForLevel(int levelIndex)
+        // Высота одного блока башни в мире (расстояние между этажами). Должна
+        // совпадать с TowerView.floorHeight. 4 этажа такой высоты ещё
+        // помещаются в обзор камеры (5.7) вместе с верхним блоком и флагом.
+        public const float TowerFloorHeight = 2.35f;
+
+        // Картинка верхнего этажа нарисована примерно на 13% уже средней
+        // (стена 802 px против 912, площадка 1030 против 1184). Чтобы
+        // стены башни не сужались скачком, при импорте верхний блок
+        // увеличивается во столько раз (отношение ширин площадок).
+        public const float TowerTopScale = 1.15f;
+
+        // Номер "ступени страшности" уровня: 1–2 → 0, 3–5 → 1, 6–8 → 2, 9–10 → 3.
+        private static int StageForLevel(int levelIndex)
         {
-            if (levelIndex < 2) return Backgrounds[0];
-            if (levelIndex < 5) return Backgrounds[1];
-            if (levelIndex < 8) return Backgrounds[2];
-            return Backgrounds[3];
+            if (levelIndex < 2) return 0;
+            if (levelIndex < 5) return 1;
+            if (levelIndex < 8) return 2;
+            return 3;
+        }
+
+        // Уровни-башни — на улице, уровни-двери — внутри замка (если картинка
+        // замка уже есть; иначе временно уличный фон той же ступени).
+        public static string BackgroundForLevel(int levelIndex, bool isDoorLevel)
+        {
+            int stage = StageForLevel(levelIndex);
+            if (isDoorLevel && File.Exists(CastleBackgrounds[stage])) return CastleBackgrounds[stage];
+            return Backgrounds[stage];
         }
 
         public static bool TryGetWorldHeight(string assetPath, out float height)
@@ -81,6 +131,13 @@ namespace MathGame.EditorTools
                 height = DoorHeight;
                 return true;
             }
+            if (assetPath.StartsWith(TowersFolder))
+            {
+                height = Path.GetFileName(assetPath).StartsWith("tower_top")
+                    ? TowerFloorHeight * TowerTopScale
+                    : TowerFloorHeight;
+                return true;
+            }
             height = 0f;
             return false;
         }
@@ -93,6 +150,7 @@ namespace MathGame.EditorTools
         {
             if (assetPath.StartsWith(CharactersFolder) ||
                 assetPath.StartsWith(DoorsFolder) ||
+                assetPath.StartsWith(TowersFolder) ||
                 assetPath.StartsWith(BackgroundsFolder))
                 return SpriteAlignment.BottomCenter;
             return SpriteAlignment.Center;
@@ -109,7 +167,7 @@ namespace MathGame.EditorTools
     {
         // Меняйте номер, когда меняете правила/числа выше: Unity
         // переимпортирует все картинки заново и применит новые настройки.
-        public override uint GetVersion() => 2;
+        public override uint GetVersion() => 5;
 
         private void OnPreprocessTexture()
         {
@@ -119,9 +177,16 @@ namespace MathGame.EditorTools
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
-            importer.mipmapEnabled = false;
+            // Картинки большие (герой ~1300 px, а на экране он ~130 px), и
+            // без mipmap'ов (заранее уменьшенных копий текстуры) такое
+            // сильное уменьшение даёт "ступеньки" и мерцание — именно это
+            // выглядело как "пиксельность". Mipmap'ы + трилинейная
+            // фильтрация делают уменьшение плавным. Фильтр Кайзера даёт
+            // самые чёткие уменьшенные копии.
+            importer.mipmapEnabled = true;
+            importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
             importer.alphaIsTransparency = true;
-            importer.filterMode = FilterMode.Bilinear;
+            importer.filterMode = FilterMode.Trilinear;
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.maxTextureSize = 2048;
@@ -139,6 +204,13 @@ namespace MathGame.EditorTools
             settings.spriteAlignment = (int)ArtSpecs.PivotFor(assetPath);
             settings.spritePixelsPerUnit = pixelsPerUnit;
             importer.SetTextureSettings(settings);
+
+            // 9-slice для растягиваемых кнопки и доски.
+            if (assetPath == ArtSpecs.ButtonWide || assetPath == ArtSpecs.PanelBoard)
+            {
+                float b = ArtSpecs.SlicedCornerPx;
+                importer.spriteBorder = new Vector4(b, b, b, b);
+            }
         }
 
         // Высота PNG лежит прямо в заголовке файла (байты 20–23) — так не

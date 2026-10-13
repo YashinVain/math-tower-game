@@ -40,6 +40,12 @@ namespace MathGame.EditorTools
             // все картинки импортированы по актуальным правилам до сборки.
             ArtImportSettings.ReimportAll();
 
+            // Шрифт и материал подписей (числа над героем/гоблинами/дверьми)
+            // подгружаются кодом из Resources — собираем их, если ещё нет.
+            if (AssetDatabase.LoadAssetAtPath<Object>(LabelFontBuilder.FontAssetPath) == null ||
+                AssetDatabase.LoadAssetAtPath<Object>(LabelFontBuilder.UiFontAssetPath) == null)
+                LabelFontBuilder.Build();
+
             var golemPrefab = BuildGolemPrefab();
             BuildTowerMinigamePrefab(golemPrefab);
 
@@ -136,6 +142,16 @@ namespace MathGame.EditorTools
             var golemSlots = new GameObject("GolemSlots");
             golemSlots.transform.SetParent(root.transform, false);
 
+            // Башня из трёх блоков (нижний/средний/верхний этаж) — рисуется
+            // позади гоблинов; нужной высоты её собирает сам TowerView.
+            var tower = new GameObject("Tower");
+            tower.transform.SetParent(root.transform, false);
+            var towerView = tower.AddComponent<TowerView>();
+            SetField(towerView, "baseSprite", LoadArtSprite(ArtSpecs.TowerBase));
+            SetField(towerView, "midSprite", LoadArtSprite(ArtSpecs.TowerMid));
+            SetField(towerView, "topSprite", LoadArtSprite(ArtSpecs.TowerTop));
+
+            SetField(controller, "towerView", towerView);
             SetField(controller, "hero", heroView);
             SetField(controller, "golemPrefab", golemPrefab.GetComponent<GolemView>());
             SetField(controller, "golemSlotParent", golemSlots.transform);

@@ -38,7 +38,7 @@ namespace MathGame.Minigames.Doors
         // ответе у правильной двери) — самое важное число на экране, поэтому
         // крупнее подписей у дверей (4.0). Меняется в Inspector на префабе
         // DoorMinigame.
-        [SerializeField] private float heroLabelFontSize = 6f;
+        [SerializeField] private float heroTargetFontSize = 8f;
         // Обзор камеры теперь такой же, как в башнях (5.7 и 4.3): после
         // подключения настоящей графики герой и двери стали крупнее
         // прежних квадратов, а четырём дверям в ряд нужно больше места по
@@ -79,7 +79,8 @@ namespace MathGame.Minigames.Doors
             _definition = (DoorMinigameDefinition)definition;
             _context = context;
             _correctDoorsPassed = 0;
-            if (heroTargetLabel != null) heroTargetLabel.fontSize = heroLabelFontSize;
+            // Число-цель героя — синее, крупное (как сила героя в играх жанра).
+            if (heroTargetLabel != null) LabelStyle.Apply(heroTargetLabel, LabelStyle.HeroColor, heroTargetFontSize);
             ConfigureCamera();
             SpawnRound();
         }
@@ -140,7 +141,13 @@ namespace MathGame.Minigames.Doors
             var difficulty = _context.BuildDifficulty();
             var targetProblem = _context.ProblemGenerator.Generate(difficulty);
             _heroTargetNumber = targetProblem.Answer;
-            if (heroTargetLabel != null) heroTargetLabel.text = _heroTargetNumber.ToString();
+            if (heroTargetLabel != null)
+            {
+                heroTargetLabel.text = _heroTargetNumber.ToString();
+                // Число-цель — на плашке над головой героя (положение по
+                // реальной высоте его картинки).
+                LabelLayout.PlaceAbove(heroTargetLabel, hero.GetComponent<SpriteRenderer>(), 0.1f);
+            }
 
             int doorCount = Mathf.Max(2, _definition.doorsPerRound);
             int correctSlot = Random.Range(0, doorCount);
@@ -169,6 +176,11 @@ namespace MathGame.Minigames.Doors
                 door.Init(problem, OnDoorChosen);
                 _activeDoors.Add(door);
             }
+
+            // Числа на всех дверях ряда — одного размера (по самому длинному примеру).
+            float commonSize = float.MaxValue;
+            foreach (var door in _activeDoors) commonSize = Mathf.Min(commonSize, door.LabelFontSize);
+            foreach (var door in _activeDoors) door.SetLabelFontSize(commonSize);
         }
 
         private MathProblem GenerateDistinctDistractor(DifficultyContext difficulty, HashSet<int> usedAnswers)

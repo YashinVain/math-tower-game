@@ -38,23 +38,24 @@ namespace MathGame.Minigames.Towers
         [SerializeField] private HeroView hero;
         [SerializeField] private GolemView golemPrefab;
         [SerializeField] private Transform golemSlotParent;
+        // Картинка башни из блоков (см. TowerView). Если не назначена (старый
+        // префаб без неё), башня просто не рисуется, а гоблины стоят по
+        // запасным числам floorHeight/baseHeight ниже.
+        [SerializeField] private TowerView towerView;
         [SerializeField] private TextMeshPro heroPowerLabel;
-        // Расстояние по высоте между "ногами" соседних гоблинов. Гоблин
-        // высотой 1.7 (см. ArtSpecs.GoblinHeight) + подпись над головой
-        // (~0.5) должны поместиться между этажами и не наехать на ноги
-        // следующего: 1.7 + 0.5 + запас = 2.4.
-        [SerializeField] private float floorHeight = 2.4f;
-        // Подъём нижнего этажа над землёй. Раньше гоблины были квадратами с
-        // центром в позиции объекта, и нижний этаж поднимали на 1, чтобы он
-        // не оказался на одной высоте с героем. Теперь позиция объекта — это
-        // "ноги" (pivot внизу картинки), а башня стоит на той же земле, что
-        // и герой, поэтому подъём 0: нижний гоблин стоит на земле, как и герой.
+        // ЗАПАСНЫЕ значения на случай, когда картинки башни нет: расстояние
+        // между "ногами" соседних гоблинов и подъём нижнего этажа над землёй.
+        // Когда башня есть, и этажи, и высоту, на которой стоят ноги гоблина,
+        // определяет TowerView (по реальным картинкам блоков).
+        [SerializeField] private float floorHeight = 2.35f;
         [SerializeField] private float baseHeight = 0f;
         [SerializeField] private float towerSpacing = 5f;
         // Размер числа силы героя над его головой — крупнее подписей у
         // гоблинов (4.5): это главное число, по которому игрок выбирает, кого
         // можно победить. Меняется в Inspector на префабе TowerMinigame.
-        [SerializeField] private float heroLabelFontSize = 6f;
+        // (Поле называлось heroLabelFontSize; новое имя нужно, чтобы уже
+        // собранный префаб не тащил старое значение 6.)
+        [SerializeField] private float heroNumberFontSize = 10f;
         [SerializeField] private float moveDuration = 0.6f;
         [SerializeField] private float cameraOrthographicSize = 5.7f;
         // Насколько центр камеры должен быть ВЫШЕ героя по Y (не
@@ -91,7 +92,8 @@ namespace MathGame.Minigames.Towers
             _heroPower = _definition.heroStartingPower;
             _maxTowerSize = 2;
             foreach (int size in _definition.towerSizes) _maxTowerSize = Mathf.Max(_maxTowerSize, size);
-            if (heroPowerLabel != null) heroPowerLabel.fontSize = heroLabelFontSize;
+            // Сила героя — синяя и крупная (цвет героя, как в играх этого жанра).
+            if (heroPowerLabel != null) LabelStyle.Apply(heroPowerLabel, LabelStyle.HeroColor, heroNumberFontSize);
             UpdateHeroLabel();
             ConfigureCamera();
             SpawnTower(0);
@@ -146,22 +148,47 @@ namespace MathGame.Minigames.Towers
             _maxRepresentable = difficulty.MaxValue * 2;
             var targets = PickTargets(size, difficulty);
 
+            // Башня из блоков (картинка) — позади гоблинов, на той же земле,
+            // что и герой.
+            float groundY = golemSlotParent.position.y;
+            if (towerView != null)
+            {
+                towerView.transform.position = new Vector3(towerX, groundY, golemSlotParent.position.z);
+                towerView.Build(targets.Count);
+            }
+
+            // Если предыдущая башня ещё не закончила "выскакивать", не даём
+            // её масштабу исказить позиции новых гоблинов при создании.
+            golemSlotParent.localScale = Vector3.one;
+
             // targets.Count ВСЕГДА равен size — башня больше никогда не
             // укорачивается (см. PickTargets).
             for (int i = 0; i < targets.Count; i++)
             {
-                // Позиция гоблина — его "ноги": этаж 0 стоит на земле
-                // (baseHeight), каждый следующий выше на floorHeight.
-                Vector3 pos = new Vector3(
-                    towerX,
-                    golemSlotParent.position.y + baseHeight + i * floorHeight,
-                    golemSlotParent.position.z);
+                // Позиция гоблина — его "ноги": на каменной площадке своего
+                // этажа (высоту даёт TowerView по картинке блока) либо, если
+                // картинки башни нет, по запасным числам.
+                float standY = towerView != null
+                    ? towerView.GetStandHeight(i, targets.Count)
+                    : baseHeight + i * floorHeight;
+                Vector3 pos = new Vector3(towerX, groundY + standY, golemSlotParent.position.z);
 
                 var golem = Instantiate(golemPrefab, pos, Quaternion.identity, golemSlotParent);
                 var problem = _context.ProblemGenerator.GenerateWithAnswer(difficulty, targets[i]);
                 golem.Init(problem, OnGolemSelected);
                 _activeGolems.Add(golem);
             }
+
+            // Числа у всех гоблинов башни — одного размера (по самому длинному примеру).
+            float commonSize = float.MaxValue;
+            foreach (var g in _activeGolems) commonSize = Mathf.Min(commonSize, g.LabelFontSize);
+            foreach (var g in _activeGolems) g.SetLabelFontSize(commonSize);
+
+            // Башня и гоблины "выскакивают" вместе: оба вырастают по высоте
+            // от земли (у гоблинов pivot внизу, как и у блоков башни).
+            if (towerView != null) towerView.PlayAppear();
+            golemSlotParent.localScale = new Vector3(1f, 0.01f, 1f);
+            StartCoroutine(SimpleTween.ScaleTo(golemSlotParent, Vector3.one, 0.3f));
 
             Vector3 heroTarget = new Vector3(towerX - _heroToTowerDistance, hero.transform.position.y, hero.transform.position.z);
             hero.MoveTo(heroTarget, moveDuration, () => _inputLocked = false);
@@ -381,7 +408,13 @@ namespace MathGame.Minigames.Towers
 
         private void UpdateHeroLabel()
         {
-            if (heroPowerLabel != null) heroPowerLabel.text = _heroPower.ToString();
+            if (heroPowerLabel == null) return;
+            heroPowerLabel.text = _heroPower.ToString();
+
+            // Сила героя — на плашке над его головой; положение считается по
+            // реальной высоте картинки героя (она менялась вместе с ростом
+            // героя), а не по числу, запомненному при сборке префаба.
+            LabelLayout.PlaceAbove(heroPowerLabel, hero.GetComponent<SpriteRenderer>(), 0.1f);
         }
     }
 }

@@ -239,6 +239,9 @@ namespace MathGame.EditorTools
             tmp.fontSize = fontSize;
             tmp.color = color;
             tmp.alignment = alignment;
+            // Жирный шрифт с русскими буквами (Russo One), если он собран.
+            var uiFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(LabelFontBuilder.UiFontAssetPath);
+            if (uiFont != null) tmp.font = uiFont;
             rect.sizeDelta = new Vector2(width, height);
             return tmp;
         }
@@ -248,19 +251,60 @@ namespace MathGame.EditorTools
             var rect = CreateUIObject(name, parent);
             rect.sizeDelta = new Vector2(width, height);
 
+            // Нарисованная кнопка: дерево, железные полосы и уголки с
+            // заклёпками (собрана из рамки уровня, см. Tools/MakeUiArt.ps1).
+            // Картинка растягивается "по краям" (9-slice): уголки остаются
+            // как нарисованы. pixelsPerUnitMultiplier уменьшает уголки так,
+            // чтобы они занимали около 30% высоты кнопки (а не 76 px при
+            // кнопке высотой 52–80) — иначе они съедали бы всю кнопку.
+            var buttonSprite = LoadArtSprite(ArtSpecs.ButtonWide);
             var image = rect.gameObject.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.9f);
+            if (buttonSprite != null)
+            {
+                image.sprite = buttonSprite;
+                image.type = Image.Type.Sliced;
+                image.color = Color.white;
+                image.pixelsPerUnitMultiplier = Mathf.Max(1f, ArtSpecs.SlicedCornerPx / (0.3f * height));
+            }
+            else
+            {
+                image.color = new Color(1f, 1f, 1f, 0.9f);
+            }
 
             var button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
+
+            // Наведение осветляет кнопку, нажатие затемняет.
+            var colors = button.colors;
+            colors.highlightedColor = new Color(1f, 0.94f, 0.78f);
+            colors.pressedColor = new Color(0.78f, 0.78f, 0.78f);
+            colors.selectedColor = Color.white;
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
 
             var labelRect = CreateUIObject("Label", rect);
             StretchFull(labelRect);
             var tmp = labelRect.gameObject.AddComponent<TextMeshProUGUI>();
             tmp.text = label;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.black;
+            tmp.raycastTarget = false;
             tmp.fontSize = fontSize;
+
+            // Жирный шрифт (Russo One — с русскими буквами) и светлый
+            // кремовый цвет на тёмном дереве; если шрифт ещё не собран —
+            // остаётся стандартный.
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(LabelFontBuilder.UiFontAssetPath);
+            var uiMaterial = AssetDatabase.LoadAssetAtPath<Material>(LabelFontBuilder.UiMaterialPath);
+            if (font != null)
+            {
+                tmp.font = font;
+                if (uiMaterial != null) tmp.fontSharedMaterial = uiMaterial;
+                tmp.color = new Color(1f, 0.93f, 0.75f);
+            }
+            else
+            {
+                tmp.color = Color.black;
+            }
 
             return button;
         }
@@ -279,8 +323,10 @@ namespace MathGame.EditorTools
             var rect = CreateUIObject(name, parent);
             rect.sizeDelta = new Vector2(width, height);
 
+            // Дорожка тёмного дерева, заливка золотая, ползунок — золотой
+            // кружок (встроенный круглый спрайт Unity, закрашенный в золото).
             var bg = rect.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.25f, 0.25f, 0.25f);
+            bg.color = new Color(0.1f, 0.06f, 0.03f);
 
             var fillAreaRect = CreateUIObject("FillArea", rect);
             StretchFull(fillAreaRect);
@@ -291,12 +337,13 @@ namespace MathGame.EditorTools
             fillRect.offsetMin = Vector2.zero;
             fillRect.offsetMax = Vector2.zero;
             var fillImage = fillRect.gameObject.AddComponent<Image>();
-            fillImage.color = new Color(0.3f, 0.6f, 1f);
+            fillImage.color = new Color(0.96f, 0.76f, 0.24f);
 
             var handleRect = CreateUIObject("Handle", rect);
-            handleRect.sizeDelta = new Vector2(20, height + 10);
+            handleRect.sizeDelta = new Vector2(height + 14, height + 14);
             var handleImage = handleRect.gameObject.AddComponent<Image>();
-            handleImage.color = Color.white;
+            handleImage.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            handleImage.color = new Color(1f, 0.88f, 0.55f);
 
             var slider = rect.gameObject.AddComponent<Slider>();
             slider.fillRect = fillRect;
@@ -314,13 +361,24 @@ namespace MathGame.EditorTools
             var rect = CreateUIObject(name, parent);
             rect.sizeDelta = new Vector2(boxSize, boxSize);
 
+            // Коробочка — та же рамка, что у кнопок уровней, а "включено" —
+            // золотая медаль с зелёной галочкой (картинки из набора значков).
+            var frameSprite = LoadArtSprite(ArtSpecs.LevelButtonFrame);
+            var checkSprite = LoadArtSprite(ArtSpecs.IconCheck);
+
             var bg = rect.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.25f, 0.25f, 0.25f);
+            bg.sprite = frameSprite;
+            bg.preserveAspect = true;
+            bg.color = frameSprite != null ? Color.white : new Color(0.25f, 0.25f, 0.25f);
 
             var checkRect = CreateUIObject("Checkmark", rect);
             StretchFull(checkRect);
+            checkRect.offsetMin = new Vector2(-4, -4);
+            checkRect.offsetMax = new Vector2(4, 4);
             var check = checkRect.gameObject.AddComponent<Image>();
-            check.color = new Color(0.3f, 0.8f, 0.4f);
+            check.sprite = checkSprite;
+            check.preserveAspect = true;
+            check.color = checkSprite != null ? Color.white : new Color(0.3f, 0.8f, 0.4f);
 
             var toggle = rect.gameObject.AddComponent<Toggle>();
             toggle.targetGraphic = bg;
@@ -336,14 +394,14 @@ namespace MathGame.EditorTools
         // вложены в общий контейнер со своей раскладкой.
         public static (Slider slider, TextMeshProUGUI valueLabel) CreateSliderRow(Transform parent, string rowName, string labelText, float min, float max, float value, float yAnchor)
         {
-            var label = CreateLabel(parent, rowName + "_Label", labelText, 20, Color.white, 340, 34, TextAlignmentOptions.MidlineRight);
-            AnchorAt(label.rectTransform, 0.32f, yAnchor, 340, 34);
+            var label = CreateLabel(parent, rowName + "_Label", labelText, 26, Color.white, 380, 40, TextAlignmentOptions.MidlineRight);
+            AnchorAt(label.rectTransform, 0.32f, yAnchor, 380, 40);
 
             var slider = CreateSlider(parent, rowName + "_Slider", min, max, value, 260, 20);
             AnchorAt(slider.GetComponent<RectTransform>(), 0.55f, yAnchor, 260, 20);
 
-            var valueLabel = CreateLabel(parent, rowName + "_Value", value.ToString("0.##"), 20, Color.white, 90, 34, TextAlignmentOptions.MidlineLeft);
-            AnchorAt(valueLabel.rectTransform, 0.74f, yAnchor, 90, 34);
+            var valueLabel = CreateLabel(parent, rowName + "_Value", value.ToString("0.##"), 26, new Color(1f, 0.88f, 0.55f), 150, 40, TextAlignmentOptions.MidlineLeft);
+            AnchorAt(valueLabel.rectTransform, 0.75f, yAnchor, 150, 40);
 
             return (slider, valueLabel);
         }
@@ -351,10 +409,10 @@ namespace MathGame.EditorTools
         public static (Toggle toggle, TextMeshProUGUI label) CreateToggleRow(Transform parent, string rowName, string labelText, bool isOn, float yAnchor)
         {
             var toggle = CreateToggle(parent, rowName + "_Toggle", isOn);
-            AnchorAt(toggle.GetComponent<RectTransform>(), 0.30f, yAnchor, 26, 26);
+            AnchorAt(toggle.GetComponent<RectTransform>(), 0.30f, yAnchor, 44, 44);
 
-            var label = CreateLabel(parent, rowName + "_Label", labelText, 20, Color.white, 300, 30, TextAlignmentOptions.MidlineLeft);
-            AnchorAt(label.rectTransform, 0.47f, yAnchor, 300, 30);
+            var label = CreateLabel(parent, rowName + "_Label", labelText, 26, Color.white, 360, 36, TextAlignmentOptions.MidlineLeft);
+            AnchorAt(label.rectTransform, 0.48f, yAnchor, 360, 36);
 
             return (toggle, label);
         }

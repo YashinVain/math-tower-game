@@ -23,24 +23,58 @@ namespace MathGame.Minigames.Towers
         // ArtImportSettings), поэтому подпись над головой стоит ровно.
         [SerializeField] private Sprite[] variants;
 
-        // Размер текста примера над головой (в "мировых" единицах TextMeshPro:
-        // 1.0 ≈ 0.1 единицы высоты в игровом мире). Задаётся здесь, а не
-        // только при сборке префаба, чтобы размер можно было поменять прямо в
-        // Inspector (выберите префаб Golem) без пересборки всего проекта.
-        [SerializeField] private float labelFontSize = 4.5f;
+        // Размер текста примера (в "мировых" единицах TextMeshPro: 1.0 ≈ 0.1
+        // единицы высоты в игровом мире). Крупный и жирный, как числа в играх
+        // этого жанра. Можно поменять прямо в Inspector (префаб Golem) без
+        // пересборки проекта.
+        [SerializeField] private float numberFontSize = 10f;
+        // Самый длинный пример не должен уходить далеко влево (к герою): если
+        // текст шире этого значения (в единицах мира), шрифт уменьшается.
+        [SerializeField] private float maxNumberWidth = 2.6f;
+
+        // Подпись стоит СЛЕВА от башни, на чистом фоне рядом со своим
+        // гоблином, а не над головой: над головой текст ложился на камень и
+        // площадки башни и выглядел неряшливо. labelRightEdge — где кончается
+        // правый край текста (относительно центра башни; стена башни ±0.87,
+        // площадка ±1.14, поэтому -1.3 — вплотную слева от башни),
+        // labelCenterY — высота центра текста над "ногами" гоблина
+        // (примерно на уровне груди).
+        [SerializeField] private float labelRightEdge = -1.3f;
+        [SerializeField] private float labelCenterY = 0.95f;
 
         private Action<GolemView> _onSelected;
 
         public int Answer { get; private set; }
 
+        // Размер подписи после подгонки по ширине: контроллер ставит самый
+        // маленький из всех гоблинов башни каждому, чтобы числа были одного размера.
+        public float LabelFontSize => expressionLabel.fontSize;
+
+        public void SetLabelFontSize(float size)
+        {
+            expressionLabel.fontSize = size;
+            Vector2 textSize = LabelLayout.Measure(expressionLabel);
+            expressionLabel.transform.localPosition = new Vector3(labelRightEdge - textSize.x * 0.5f, labelCenterY, 0f);
+        }
+
         public void Init(MathProblem problem, Action<GolemView> onSelected)
         {
             Answer = problem.Answer;
-            expressionLabel.fontSize = labelFontSize;
-            expressionLabel.text = $"x = {problem.Expression}";
+            // Красный цвет — "пример, который нужно решить" (синий у героя).
+            LabelStyle.Apply(expressionLabel, LabelStyle.ProblemColor, numberFontSize);
+            // Только пример, без "x =": как в играх этого жанра, где над
+            // врагом просто крупное число, — так оно может быть заметно крупнее.
+            expressionLabel.text = problem.Expression;
+            LabelStyle.FitWidth(expressionLabel, maxNumberWidth);
             _onSelected = onSelected;
 
             PickVariant();
+
+            // Положение слева от башни: центр подписи сдвигается так, чтобы
+            // правый край текста стоял ровно на labelRightEdge при любой
+            // длине примера.
+            Vector2 textSize = LabelLayout.Measure(expressionLabel);
+            expressionLabel.transform.localPosition = new Vector3(labelRightEdge - textSize.x * 0.5f, labelCenterY, 0f);
         }
 
         private void PickVariant()
